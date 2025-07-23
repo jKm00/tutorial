@@ -92,31 +92,22 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             Home
           </Link>{" "}
           <Link
-            to="/example-1"
+            to="/basic-loader"
             activeProps={{
               className: "font-bold",
             }}
             activeOptions={{ exact: true }}
           >
-            Example 1
+            Basic Loader
           </Link>{" "}
           <Link
-            to="/example-2"
+            to="/with-suspense-query"
             activeProps={{
               className: "font-bold",
             }}
             activeOptions={{ exact: true }}
           >
-            Example 2
-          </Link>{" "}
-          <Link
-            to="/example-3"
-            activeProps={{
-              className: "font-bold",
-            }}
-            activeOptions={{ exact: true }}
-          >
-            Example 3
+            With Suspense Query
           </Link>{" "}
         </div>
         <hr />

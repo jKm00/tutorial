@@ -9,24 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as Example3RouteImport } from './routes/example-3'
-import { Route as Example2RouteImport } from './routes/example-2'
-import { Route as Example1RouteImport } from './routes/example-1'
+import { Route as WithSuspenseQueryRouteImport } from './routes/with-suspense-query'
+import { Route as BasicLoaderRouteImport } from './routes/basic-loader'
 import { Route as IndexRouteImport } from './routes/index'
 
-const Example3Route = Example3RouteImport.update({
-  id: '/example-3',
-  path: '/example-3',
+const WithSuspenseQueryRoute = WithSuspenseQueryRouteImport.update({
+  id: '/with-suspense-query',
+  path: '/with-suspense-query',
   getParentRoute: () => rootRouteImport,
 } as any)
-const Example2Route = Example2RouteImport.update({
-  id: '/example-2',
-  path: '/example-2',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const Example1Route = Example1RouteImport.update({
-  id: '/example-1',
-  path: '/example-1',
+const BasicLoaderRoute = BasicLoaderRouteImport.update({
+  id: '/basic-loader',
+  path: '/basic-loader',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -37,59 +31,48 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/example-1': typeof Example1Route
-  '/example-2': typeof Example2Route
-  '/example-3': typeof Example3Route
+  '/basic-loader': typeof BasicLoaderRoute
+  '/with-suspense-query': typeof WithSuspenseQueryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/example-1': typeof Example1Route
-  '/example-2': typeof Example2Route
-  '/example-3': typeof Example3Route
+  '/basic-loader': typeof BasicLoaderRoute
+  '/with-suspense-query': typeof WithSuspenseQueryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/example-1': typeof Example1Route
-  '/example-2': typeof Example2Route
-  '/example-3': typeof Example3Route
+  '/basic-loader': typeof BasicLoaderRoute
+  '/with-suspense-query': typeof WithSuspenseQueryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/example-1' | '/example-2' | '/example-3'
+  fullPaths: '/' | '/basic-loader' | '/with-suspense-query'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/example-1' | '/example-2' | '/example-3'
-  id: '__root__' | '/' | '/example-1' | '/example-2' | '/example-3'
+  to: '/' | '/basic-loader' | '/with-suspense-query'
+  id: '__root__' | '/' | '/basic-loader' | '/with-suspense-query'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  Example1Route: typeof Example1Route
-  Example2Route: typeof Example2Route
-  Example3Route: typeof Example3Route
+  BasicLoaderRoute: typeof BasicLoaderRoute
+  WithSuspenseQueryRoute: typeof WithSuspenseQueryRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/example-3': {
-      id: '/example-3'
-      path: '/example-3'
-      fullPath: '/example-3'
-      preLoaderRoute: typeof Example3RouteImport
+    '/with-suspense-query': {
+      id: '/with-suspense-query'
+      path: '/with-suspense-query'
+      fullPath: '/with-suspense-query'
+      preLoaderRoute: typeof WithSuspenseQueryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/example-2': {
-      id: '/example-2'
-      path: '/example-2'
-      fullPath: '/example-2'
-      preLoaderRoute: typeof Example2RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/example-1': {
-      id: '/example-1'
-      path: '/example-1'
-      fullPath: '/example-1'
-      preLoaderRoute: typeof Example1RouteImport
+    '/basic-loader': {
+      id: '/basic-loader'
+      path: '/basic-loader'
+      fullPath: '/basic-loader'
+      preLoaderRoute: typeof BasicLoaderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -104,9 +87,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  Example1Route: Example1Route,
-  Example2Route: Example2Route,
-  Example3Route: Example3Route,
+  BasicLoaderRoute: BasicLoaderRoute,
+  WithSuspenseQueryRoute: WithSuspenseQueryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
