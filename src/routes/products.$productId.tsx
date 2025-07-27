@@ -111,17 +111,15 @@ function RecommendedProducts({ category, excludeId }: { category: string; exclud
           params={{ productId: recommendedProduct.id.toString() }}
           className="block"
         >
-          <Card className="overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer">
-            <CardHeader className="p-0">
-              <div className="aspect-square overflow-hidden">
-                <img
-                  src={recommendedProduct.image}
-                  alt={recommendedProduct.title}
-                  className="w-full h-full object-contain p-4"
-                  loading="lazy"
-                />
-              </div>
-            </CardHeader>
+          <Card>
+            <div className="aspect-square overflow-hidden">
+              <img
+                src={recommendedProduct.image}
+                alt={recommendedProduct.title}
+                className="w-full h-full object-contain"
+                loading="lazy"
+              />
+            </div>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <Badge variant="secondary" className="text-xs">
