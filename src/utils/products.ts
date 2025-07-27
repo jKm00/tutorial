@@ -27,6 +27,7 @@ const ProductSchema = z.object({
 export const getProduct = createServerFn({ method: "GET" })
   .validator(ProductSchema)
   .handler(async ({ data }) => {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     return axios.get<Product>(`https://fakestoreapi.com/products/${data.id}`).then((r) => r.data);
   });
 
