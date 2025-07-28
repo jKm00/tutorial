@@ -20,7 +20,6 @@ const todos: Todo[] = [
 ];
 
 export const getTodos = createServerFn({ method: "GET" }).handler(async () => {
-  await new Promise((resolve) => setTimeout(resolve, 2000));
   return todos;
 });
 
@@ -36,10 +35,6 @@ export const addTodo = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    if (Math.random() < 0.2) {
-      throw new Error("Failed to add todo");
-    }
 
     const todo: Todo = {
       id: String(Date.now()),
