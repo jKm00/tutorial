@@ -16,6 +16,7 @@ import appCss from "@/styles/app.css?url";
 import { seo } from "@/utils/seo";
 import { ThemeProvider } from "@/features/theme/theme-prodivder";
 import { themeScript } from "@/features/theme/script";
+import { ThemeToggle } from "@/features/theme/theme-toggle";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -78,7 +79,7 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html>
+    <html suppressHydrationWarning>
       <head>
         <HeadContent />
         <script
@@ -87,9 +88,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           }}
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-          <div className="p-2 flex gap-2 text-lg">
+          <div className="p-4 flex items-center justify-between gap-2 text-lg">
             <Link
               to="/"
               activeProps={{
@@ -99,6 +100,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             >
               Home
             </Link>{" "}
+            <ThemeToggle />
           </div>
           <hr />
           {children}

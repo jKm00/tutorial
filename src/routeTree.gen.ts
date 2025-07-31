@@ -12,7 +12,7 @@ import { createServerRootRoute } from '@tanstack/react-start/server'
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { ServerRoute as ApiUsersIdServerRouteImport } from './routes/api/users.$id'
+import { ServerRoute as ApiUsersServerRouteImport } from './routes/api/users'
 
 const rootServerRouteImport = createServerRootRoute()
 
@@ -21,9 +21,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiUsersIdServerRoute = ApiUsersIdServerRouteImport.update({
-  id: '/api/users/$id',
-  path: '/api/users/$id',
+const ApiUsersServerRoute = ApiUsersServerRouteImport.update({
+  id: '/api/users',
+  path: '/api/users',
   getParentRoute: () => rootServerRouteImport,
 } as any)
 
@@ -49,25 +49,25 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
 }
 export interface FileServerRoutesByFullPath {
-  '/api/users/$id': typeof ApiUsersIdServerRoute
+  '/api/users': typeof ApiUsersServerRoute
 }
 export interface FileServerRoutesByTo {
-  '/api/users/$id': typeof ApiUsersIdServerRoute
+  '/api/users': typeof ApiUsersServerRoute
 }
 export interface FileServerRoutesById {
   __root__: typeof rootServerRouteImport
-  '/api/users/$id': typeof ApiUsersIdServerRoute
+  '/api/users': typeof ApiUsersServerRoute
 }
 export interface FileServerRouteTypes {
   fileServerRoutesByFullPath: FileServerRoutesByFullPath
-  fullPaths: '/api/users/$id'
+  fullPaths: '/api/users'
   fileServerRoutesByTo: FileServerRoutesByTo
-  to: '/api/users/$id'
-  id: '__root__' | '/api/users/$id'
+  to: '/api/users'
+  id: '__root__' | '/api/users'
   fileServerRoutesById: FileServerRoutesById
 }
 export interface RootServerRouteChildren {
-  ApiUsersIdServerRoute: typeof ApiUsersIdServerRoute
+  ApiUsersServerRoute: typeof ApiUsersServerRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -83,11 +83,11 @@ declare module '@tanstack/react-router' {
 }
 declare module '@tanstack/react-start/server' {
   interface ServerFileRoutesByPath {
-    '/api/users/$id': {
-      id: '/api/users/$id'
-      path: '/api/users/$id'
-      fullPath: '/api/users/$id'
-      preLoaderRoute: typeof ApiUsersIdServerRouteImport
+    '/api/users': {
+      id: '/api/users'
+      path: '/api/users'
+      fullPath: '/api/users'
+      preLoaderRoute: typeof ApiUsersServerRouteImport
       parentRoute: typeof rootServerRouteImport
     }
   }
@@ -100,7 +100,7 @@ export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 const rootServerRouteChildren: RootServerRouteChildren = {
-  ApiUsersIdServerRoute: ApiUsersIdServerRoute,
+  ApiUsersServerRoute: ApiUsersServerRoute,
 }
 export const serverRouteTree = rootServerRouteImport
   ._addFileChildren(rootServerRouteChildren)
