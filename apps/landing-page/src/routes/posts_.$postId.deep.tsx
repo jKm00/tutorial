@@ -1,28 +1,18 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { postQueryOptions } from '../utils/posts'
-import { PostErrorComponent } from './posts.$postId'
+import { fetchPost } from '../utils/posts'
+import { PostErrorComponent } from '~/components/PostError'
 
 export const Route = createFileRoute('/posts_/$postId/deep')({
-  loader: async ({ params: { postId }, context }) => {
-    const data = await context.queryClient.ensureQueryData(
-      postQueryOptions(postId),
-    )
-
-    return {
-      title: data.title,
-    }
-  },
-  head: ({ loaderData }) => ({
-    meta: loaderData ? [{ title: loaderData.title }] : undefined,
-  }),
+  loader: async ({ params: { postId } }) =>
+    fetchPost({
+      data: postId,
+    }),
   errorComponent: PostErrorComponent,
   component: PostDeepComponent,
 })
 
 function PostDeepComponent() {
-  const { postId } = Route.useParams()
-  const postQuery = useSuspenseQuery(postQueryOptions(postId))
+  const post = Route.useLoaderData()
 
   return (
     <div className="p-2 space-y-2">
@@ -32,8 +22,8 @@ function PostDeepComponent() {
       >
         ← All Posts
       </Link>
-      <h4 className="text-xl font-bold underline">{postQuery.data.title}</h4>
-      <div className="text-sm">{postQuery.data.body}</div>
+      <h4 className="text-xl font-bold underline">{post.title}</h4>
+      <div className="text-sm">{post.body}</div>
     </div>
   )
 }

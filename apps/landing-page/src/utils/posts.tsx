@@ -1,7 +1,5 @@
-import { queryOptions } from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import axios from 'redaxios'
 
 export type PostType = {
   id: string
@@ -9,41 +7,34 @@ export type PostType = {
   body: string
 }
 
-export const fetchPosts = createServerFn({ method: 'GET' }).handler(
-  async () => {
-    console.info('Fetching posts...')
-    return axios
-      .get<Array<PostType>>('https://jsonplaceholder.typicode.com/posts')
-      .then((r) => r.data.slice(0, 10))
-  },
-)
-
-export const postsQueryOptions = () =>
-  queryOptions({
-    queryKey: ['posts'],
-    queryFn: () => fetchPosts(),
-  })
-
-export const fetchPost = createServerFn({ method: 'GET' })
+export const fetchPost = createServerFn()
   .validator((d: string) => d)
   .handler(async ({ data }) => {
     console.info(`Fetching post with id ${data}...`)
-    const post = await axios
-      .get<PostType>(`https://jsonplaceholder.typicode.com/posts/${data}`)
-      .then((r) => r.data)
-      .catch((err) => {
-        console.error(err)
-        if (err.status === 404) {
-          throw notFound()
-        }
-        throw err
-      })
+    const res = await fetch(
+      `https://jsonplaceholder.typicode.com/posts/${data}`,
+    )
+    if (!res.ok) {
+      if (res.status === 404) {
+        throw notFound()
+      }
+
+      throw new Error('Failed to fetch post')
+    }
+
+    const post = (await res.json()) as PostType
 
     return post
   })
 
-export const postQueryOptions = (postId: string) =>
-  queryOptions({
-    queryKey: ['post', postId],
-    queryFn: () => fetchPost({ data: postId }),
-  })
+export const fetchPosts = createServerFn().handler(async () => {
+  console.info('Fetching posts...')
+  const res = await fetch('https://jsonplaceholder.typicode.com/posts')
+  if (!res.ok) {
+    throw new Error('Failed to fetch posts')
+  }
+
+  const posts = (await res.json()) as Array<PostType>
+
+  return posts.slice(0, 10)
+})

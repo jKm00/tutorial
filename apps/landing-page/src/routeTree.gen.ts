@@ -11,11 +11,11 @@
 import { createServerRootRoute } from '@tanstack/react-start/server'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as RedirectRouteImport } from './routes/redirect'
+import { Route as PostsRouteImport } from './routes/posts'
 import { Route as DeferredRouteImport } from './routes/deferred'
 import { Route as PathlessLayoutRouteImport } from './routes/_pathlessLayout'
-import { Route as UsersRouteRouteImport } from './routes/users.route'
-import { Route as PostsRouteRouteImport } from './routes/posts.route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersIndexRouteImport } from './routes/users.index'
 import { Route as PostsIndexRouteImport } from './routes/posts.index'
@@ -25,14 +25,25 @@ import { Route as PathlessLayoutNestedLayoutRouteImport } from './routes/_pathle
 import { Route as PostsPostIdDeepRouteImport } from './routes/posts_.$postId.deep'
 import { Route as PathlessLayoutNestedLayoutRouteBRouteImport } from './routes/_pathlessLayout/_nested-layout/route-b'
 import { Route as PathlessLayoutNestedLayoutRouteARouteImport } from './routes/_pathlessLayout/_nested-layout/route-a'
-import { ServerRoute as ApiUsersServerRouteImport } from './routes/api.users'
-import { ServerRoute as ApiUsersIdServerRouteImport } from './routes/api/users.$id'
+import { ServerRoute as CustomScriptDotjsServerRouteImport } from './routes/customScript[.]js'
+import { ServerRoute as ApiUsersServerRouteImport } from './routes/api/users'
+import { ServerRoute as ApiUsersUserIdServerRouteImport } from './routes/api/users.$userId'
 
 const rootServerRouteImport = createServerRootRoute()
 
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RedirectRoute = RedirectRouteImport.update({
   id: '/redirect',
   path: '/redirect',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PostsRoute = PostsRouteImport.update({
+  id: '/posts',
+  path: '/posts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DeferredRoute = DeferredRouteImport.update({
@@ -44,16 +55,6 @@ const PathlessLayoutRoute = PathlessLayoutRouteImport.update({
   id: '/_pathlessLayout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UsersRouteRoute = UsersRouteRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PostsRouteRoute = PostsRouteRouteImport.update({
-  id: '/posts',
-  path: '/posts',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -62,22 +63,22 @@ const IndexRoute = IndexRouteImport.update({
 const UsersIndexRoute = UsersIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => UsersRouteRoute,
+  getParentRoute: () => UsersRoute,
 } as any)
 const PostsIndexRoute = PostsIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => PostsRouteRoute,
+  getParentRoute: () => PostsRoute,
 } as any)
 const UsersUserIdRoute = UsersUserIdRouteImport.update({
   id: '/$userId',
   path: '/$userId',
-  getParentRoute: () => UsersRouteRoute,
+  getParentRoute: () => UsersRoute,
 } as any)
 const PostsPostIdRoute = PostsPostIdRouteImport.update({
   id: '/$postId',
   path: '/$postId',
-  getParentRoute: () => PostsRouteRoute,
+  getParentRoute: () => PostsRoute,
 } as any)
 const PathlessLayoutNestedLayoutRoute =
   PathlessLayoutNestedLayoutRouteImport.update({
@@ -101,23 +102,28 @@ const PathlessLayoutNestedLayoutRouteARoute =
     path: '/route-a',
     getParentRoute: () => PathlessLayoutNestedLayoutRoute,
   } as any)
+const CustomScriptDotjsServerRoute = CustomScriptDotjsServerRouteImport.update({
+  id: '/customScript.js',
+  path: '/customScript.js',
+  getParentRoute: () => rootServerRouteImport,
+} as any)
 const ApiUsersServerRoute = ApiUsersServerRouteImport.update({
   id: '/api/users',
   path: '/api/users',
   getParentRoute: () => rootServerRouteImport,
 } as any)
-const ApiUsersIdServerRoute = ApiUsersIdServerRouteImport.update({
-  id: '/$id',
-  path: '/$id',
+const ApiUsersUserIdServerRoute = ApiUsersUserIdServerRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
   getParentRoute: () => ApiUsersServerRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/posts': typeof PostsRouteRouteWithChildren
-  '/users': typeof UsersRouteRouteWithChildren
   '/deferred': typeof DeferredRoute
+  '/posts': typeof PostsRouteWithChildren
   '/redirect': typeof RedirectRoute
+  '/users': typeof UsersRouteWithChildren
   '/posts/$postId': typeof PostsPostIdRoute
   '/users/$userId': typeof UsersUserIdRoute
   '/posts/': typeof PostsIndexRoute
@@ -141,11 +147,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/posts': typeof PostsRouteRouteWithChildren
-  '/users': typeof UsersRouteRouteWithChildren
   '/_pathlessLayout': typeof PathlessLayoutRouteWithChildren
   '/deferred': typeof DeferredRoute
+  '/posts': typeof PostsRouteWithChildren
   '/redirect': typeof RedirectRoute
+  '/users': typeof UsersRouteWithChildren
   '/_pathlessLayout/_nested-layout': typeof PathlessLayoutNestedLayoutRouteWithChildren
   '/posts/$postId': typeof PostsPostIdRoute
   '/users/$userId': typeof UsersUserIdRoute
@@ -159,10 +165,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/posts'
-    | '/users'
     | '/deferred'
+    | '/posts'
     | '/redirect'
+    | '/users'
     | '/posts/$postId'
     | '/users/$userId'
     | '/posts/'
@@ -185,11 +191,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/posts'
-    | '/users'
     | '/_pathlessLayout'
     | '/deferred'
+    | '/posts'
     | '/redirect'
+    | '/users'
     | '/_pathlessLayout/_nested-layout'
     | '/posts/$postId'
     | '/users/$userId'
@@ -202,45 +208,63 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  PostsRouteRoute: typeof PostsRouteRouteWithChildren
-  UsersRouteRoute: typeof UsersRouteRouteWithChildren
   PathlessLayoutRoute: typeof PathlessLayoutRouteWithChildren
   DeferredRoute: typeof DeferredRoute
+  PostsRoute: typeof PostsRouteWithChildren
   RedirectRoute: typeof RedirectRoute
+  UsersRoute: typeof UsersRouteWithChildren
   PostsPostIdDeepRoute: typeof PostsPostIdDeepRoute
 }
 export interface FileServerRoutesByFullPath {
+  '/customScript.js': typeof CustomScriptDotjsServerRoute
   '/api/users': typeof ApiUsersServerRouteWithChildren
-  '/api/users/$id': typeof ApiUsersIdServerRoute
+  '/api/users/$userId': typeof ApiUsersUserIdServerRoute
 }
 export interface FileServerRoutesByTo {
+  '/customScript.js': typeof CustomScriptDotjsServerRoute
   '/api/users': typeof ApiUsersServerRouteWithChildren
-  '/api/users/$id': typeof ApiUsersIdServerRoute
+  '/api/users/$userId': typeof ApiUsersUserIdServerRoute
 }
 export interface FileServerRoutesById {
   __root__: typeof rootServerRouteImport
+  '/customScript.js': typeof CustomScriptDotjsServerRoute
   '/api/users': typeof ApiUsersServerRouteWithChildren
-  '/api/users/$id': typeof ApiUsersIdServerRoute
+  '/api/users/$userId': typeof ApiUsersUserIdServerRoute
 }
 export interface FileServerRouteTypes {
   fileServerRoutesByFullPath: FileServerRoutesByFullPath
-  fullPaths: '/api/users' | '/api/users/$id'
+  fullPaths: '/customScript.js' | '/api/users' | '/api/users/$userId'
   fileServerRoutesByTo: FileServerRoutesByTo
-  to: '/api/users' | '/api/users/$id'
-  id: '__root__' | '/api/users' | '/api/users/$id'
+  to: '/customScript.js' | '/api/users' | '/api/users/$userId'
+  id: '__root__' | '/customScript.js' | '/api/users' | '/api/users/$userId'
   fileServerRoutesById: FileServerRoutesById
 }
 export interface RootServerRouteChildren {
+  CustomScriptDotjsServerRoute: typeof CustomScriptDotjsServerRoute
   ApiUsersServerRoute: typeof ApiUsersServerRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/redirect': {
       id: '/redirect'
       path: '/redirect'
       fullPath: '/redirect'
       preLoaderRoute: typeof RedirectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/posts': {
+      id: '/posts'
+      path: '/posts'
+      fullPath: '/posts'
+      preLoaderRoute: typeof PostsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/deferred': {
@@ -257,20 +281,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PathlessLayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/users': {
-      id: '/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/posts': {
-      id: '/posts'
-      path: '/posts'
-      fullPath: '/posts'
-      preLoaderRoute: typeof PostsRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -283,28 +293,28 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/users/'
       preLoaderRoute: typeof UsersIndexRouteImport
-      parentRoute: typeof UsersRouteRoute
+      parentRoute: typeof UsersRoute
     }
     '/posts/': {
       id: '/posts/'
       path: '/'
       fullPath: '/posts/'
       preLoaderRoute: typeof PostsIndexRouteImport
-      parentRoute: typeof PostsRouteRoute
+      parentRoute: typeof PostsRoute
     }
     '/users/$userId': {
       id: '/users/$userId'
       path: '/$userId'
       fullPath: '/users/$userId'
       preLoaderRoute: typeof UsersUserIdRouteImport
-      parentRoute: typeof UsersRouteRoute
+      parentRoute: typeof UsersRoute
     }
     '/posts/$postId': {
       id: '/posts/$postId'
       path: '/$postId'
       fullPath: '/posts/$postId'
       preLoaderRoute: typeof PostsPostIdRouteImport
-      parentRoute: typeof PostsRouteRoute
+      parentRoute: typeof PostsRoute
     }
     '/_pathlessLayout/_nested-layout': {
       id: '/_pathlessLayout/_nested-layout'
@@ -338,6 +348,13 @@ declare module '@tanstack/react-router' {
 }
 declare module '@tanstack/react-start/server' {
   interface ServerFileRoutesByPath {
+    '/customScript.js': {
+      id: '/customScript.js'
+      path: '/customScript.js'
+      fullPath: '/customScript.js'
+      preLoaderRoute: typeof CustomScriptDotjsServerRouteImport
+      parentRoute: typeof rootServerRouteImport
+    }
     '/api/users': {
       id: '/api/users'
       path: '/api/users'
@@ -345,43 +362,15 @@ declare module '@tanstack/react-start/server' {
       preLoaderRoute: typeof ApiUsersServerRouteImport
       parentRoute: typeof rootServerRouteImport
     }
-    '/api/users/$id': {
-      id: '/api/users/$id'
-      path: '/$id'
-      fullPath: '/api/users/$id'
-      preLoaderRoute: typeof ApiUsersIdServerRouteImport
+    '/api/users/$userId': {
+      id: '/api/users/$userId'
+      path: '/$userId'
+      fullPath: '/api/users/$userId'
+      preLoaderRoute: typeof ApiUsersUserIdServerRouteImport
       parentRoute: typeof ApiUsersServerRoute
     }
   }
 }
-
-interface PostsRouteRouteChildren {
-  PostsPostIdRoute: typeof PostsPostIdRoute
-  PostsIndexRoute: typeof PostsIndexRoute
-}
-
-const PostsRouteRouteChildren: PostsRouteRouteChildren = {
-  PostsPostIdRoute: PostsPostIdRoute,
-  PostsIndexRoute: PostsIndexRoute,
-}
-
-const PostsRouteRouteWithChildren = PostsRouteRoute._addFileChildren(
-  PostsRouteRouteChildren,
-)
-
-interface UsersRouteRouteChildren {
-  UsersUserIdRoute: typeof UsersUserIdRoute
-  UsersIndexRoute: typeof UsersIndexRoute
-}
-
-const UsersRouteRouteChildren: UsersRouteRouteChildren = {
-  UsersUserIdRoute: UsersUserIdRoute,
-  UsersIndexRoute: UsersIndexRoute,
-}
-
-const UsersRouteRouteWithChildren = UsersRouteRoute._addFileChildren(
-  UsersRouteRouteChildren,
-)
 
 interface PathlessLayoutNestedLayoutRouteChildren {
   PathlessLayoutNestedLayoutRouteARoute: typeof PathlessLayoutNestedLayoutRouteARoute
@@ -413,12 +402,36 @@ const PathlessLayoutRouteWithChildren = PathlessLayoutRoute._addFileChildren(
   PathlessLayoutRouteChildren,
 )
 
+interface PostsRouteChildren {
+  PostsPostIdRoute: typeof PostsPostIdRoute
+  PostsIndexRoute: typeof PostsIndexRoute
+}
+
+const PostsRouteChildren: PostsRouteChildren = {
+  PostsPostIdRoute: PostsPostIdRoute,
+  PostsIndexRoute: PostsIndexRoute,
+}
+
+const PostsRouteWithChildren = PostsRoute._addFileChildren(PostsRouteChildren)
+
+interface UsersRouteChildren {
+  UsersUserIdRoute: typeof UsersUserIdRoute
+  UsersIndexRoute: typeof UsersIndexRoute
+}
+
+const UsersRouteChildren: UsersRouteChildren = {
+  UsersUserIdRoute: UsersUserIdRoute,
+  UsersIndexRoute: UsersIndexRoute,
+}
+
+const UsersRouteWithChildren = UsersRoute._addFileChildren(UsersRouteChildren)
+
 interface ApiUsersServerRouteChildren {
-  ApiUsersIdServerRoute: typeof ApiUsersIdServerRoute
+  ApiUsersUserIdServerRoute: typeof ApiUsersUserIdServerRoute
 }
 
 const ApiUsersServerRouteChildren: ApiUsersServerRouteChildren = {
-  ApiUsersIdServerRoute: ApiUsersIdServerRoute,
+  ApiUsersUserIdServerRoute: ApiUsersUserIdServerRoute,
 }
 
 const ApiUsersServerRouteWithChildren = ApiUsersServerRoute._addFileChildren(
@@ -427,17 +440,18 @@ const ApiUsersServerRouteWithChildren = ApiUsersServerRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  PostsRouteRoute: PostsRouteRouteWithChildren,
-  UsersRouteRoute: UsersRouteRouteWithChildren,
   PathlessLayoutRoute: PathlessLayoutRouteWithChildren,
   DeferredRoute: DeferredRoute,
+  PostsRoute: PostsRouteWithChildren,
   RedirectRoute: RedirectRoute,
+  UsersRoute: UsersRouteWithChildren,
   PostsPostIdDeepRoute: PostsPostIdDeepRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 const rootServerRouteChildren: RootServerRouteChildren = {
+  CustomScriptDotjsServerRoute: CustomScriptDotjsServerRoute,
   ApiUsersServerRoute: ApiUsersServerRouteWithChildren,
 }
 export const serverRouteTree = rootServerRouteImport
