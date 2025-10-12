@@ -1,5 +1,7 @@
 import { CustomError } from "~/errors";
 
+export type GetTodosErrorType = "UnknownError";
+
 export type AddTodoErrorType =
   | "TooShortError"
   | "DuplicateError"

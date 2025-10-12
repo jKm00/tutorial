@@ -1,9 +1,13 @@
-import { DuplicateTodoError } from "./errors";
-import { Todo } from "./types";
+import { DuplicateTodoError } from "../todo.errors";
+import { Todo } from "../todo.types";
 
 const todos: Todo[] = [];
 
-function addTodo(todo: Todo) {
+async function getTodos() {
+  return todos;
+}
+
+async function addTodo(todo: Todo) {
   if (todos.find((t) => t.text === todo.text)) {
     throw new DuplicateTodoError("Todo already exists");
   }
@@ -12,5 +16,6 @@ function addTodo(todo: Todo) {
 }
 
 export const todoService = {
+  getTodos,
   addTodo,
 };
