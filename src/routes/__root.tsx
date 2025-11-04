@@ -8,6 +8,8 @@ import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import appCss from "../styles.css?url";
 
 import type { QueryClient } from "@tanstack/react-query";
+import { createServerFn } from "@tanstack/react-start";
+import { user } from "@/auth";
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -39,8 +41,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  // const ENABLE_CHRISTMAS_THEME = true;
+  // const ENABLE_CHRISTMAS_THEME = import.meta.env.VITE_ENABLE_CHRISTMAS_THEME === "true";
+  const ENABLE_CHRISTMAS_THEME = new Date().getMonth() === 11;
+
   return (
-    <html lang="en">
+    <html lang="en" data-theme={ENABLE_CHRISTMAS_THEME ? "christmas" : ""}>
       <head>
         <HeadContent />
       </head>
@@ -50,8 +56,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             <Link to="/">My Company</Link>
           </h1>
           <ul className="flex items-center gap-2 text-sm">
-            <li>Login</li>
-            <li>Regiter</li>
+            {user ? (
+              <li>{user.email}</li>
+            ) : (
+              <>
+                <li>Login</li>
+                <li>Regiter</li>
+              </>
+            )}
             <li className="flex items-center">
               <ShoppingCart className="" /> (0)
             </li>

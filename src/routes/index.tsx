@@ -7,10 +7,10 @@ import { ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: App,
-  loader: async () => await getProducst(),
+  loader: async () => await getProdust(),
 });
 
-const getProducst = createServerFn({ method: "GET" }).handler(async () => {
+const getProdust = createServerFn({ method: "GET" }).handler(async () => {
   const res = await fetch("https://dummyjson.com/products");
   const data = (await res.json()) as ProductsResponse;
   return data;
@@ -18,11 +18,12 @@ const getProducst = createServerFn({ method: "GET" }).handler(async () => {
 
 function App() {
   const data = Route.useLoaderData();
+
   return (
     <div className="p-4 flex flex-col gap-4">
       <h2 className="font-semibold text-3xl mb-4">Products</h2>
       {data.products.map((product) => (
-        <Link to="/products/$id" params={{ id: `${product.id}` }}>
+        <Link key={product.id} to="/products/$id" params={{ id: `${product.id}` }}>
           <Card>
             <CardHeader>
               <img src={product.images[0]} />
@@ -33,7 +34,7 @@ function App() {
                 <li>{product.category}</li>
                 <li>{product.availabilityStatus}</li>
               </ul>
-              <CardTitle className="mb-4">{product.title}</CardTitle>
+              <CardTitle className="mb-4 text-primary">{product.title}</CardTitle>
               <CardDescription className="mb-4">{product.description}</CardDescription>
               <Button>
                 Shop <ArrowRight />

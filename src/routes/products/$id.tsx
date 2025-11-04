@@ -1,9 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { legacyRecommendationAlgo } from "@/lib/products";
+import { legacyRecommendationAlgo, newRecommendationAlgo } from "@/lib/products";
 import { Product } from "@/types";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { Star } from "lucide-react";
+import { user as requestingUser } from "@/auth";
 
 export const Route = createFileRoute("/products/$id")({
   component: RouteComponent,
@@ -30,6 +31,16 @@ const getRecommendations = createServerFn({ method: "GET" })
   .inputValidator((data: { category: string }) => data)
   .handler(async ({ data }) => {
     const category = data.category;
+
+    // const testUser = ["john@doe.com"]
+    // if (requestingUser && testUser.includes(requestingUser.email)) {
+    //   return newRecommendationAlgo(category)
+    // }
+
+    if (Math.random() < 0.2) {
+      return newRecommendationAlgo(category);
+    }
+
     return legacyRecommendationAlgo(category);
   });
 
@@ -44,7 +55,7 @@ function RouteComponent() {
             <img src={product.images[0]} />
           </CardHeader>
           <CardContent>
-            <CardTitle className="mb-4">{product.title}</CardTitle>
+            <CardTitle className="mb-4 text-primary">{product.title}</CardTitle>
             <CardDescription className="mb-4">{product.description}</CardDescription>
             <p>${product.price}</p>
           </CardContent>
@@ -52,8 +63,8 @@ function RouteComponent() {
       </section>
       <section className="space-y-2 mb-8">
         <h3 className="font-semibold">Review ({product.reviews.length})</h3>
-        {product.reviews.map((review) => (
-          <Card>
+        {product.reviews.map((review, i) => (
+          <Card key={i}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -61,11 +72,11 @@ function RouteComponent() {
                   <CardDescription>{review.reviewerEmail}</CardDescription>
                 </div>
                 <div className="flex">
-                  {Array.from(Array(review.rating)).map(() => (
-                    <Star className="fill-foreground size-4" />
+                  {Array.from(Array(review.rating)).map((_, i) => (
+                    <Star key={i} className="fill-foreground size-4" />
                   ))}
-                  {Array.from(Array(5 - review.rating)).map(() => (
-                    <Star className="size-4" />
+                  {Array.from(Array(5 - review.rating)).map((_, i) => (
+                    <Star key={i} className="size-4" />
                   ))}
                 </div>
               </div>
@@ -79,13 +90,13 @@ function RouteComponent() {
       <section>
         <h3 className="font-semibold">Recommendations</h3>
         <div className="grid grid-cols-2 gap-2">
-          {recommendations.products.map((product) => (
-            <Card>
+          {recommendations.map((product) => (
+            <Card key={product.id}>
               <CardHeader>
                 <img src={product.images[0]} />
               </CardHeader>
               <CardContent>
-                <CardTitle>{product.title}</CardTitle>
+                <CardTitle className="text-primary">{product.title}</CardTitle>
                 <CardDescription>${product.price}</CardDescription>
               </CardContent>
             </Card>
