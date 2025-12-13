@@ -1,0 +1,1 @@
+bucket_name = "terraform-101-tutorial-2025"
