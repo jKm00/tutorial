@@ -9,8 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as InfiniteQueryRouteImport } from './routes/infinite-query'
 import { Route as IndexRouteImport } from './routes/index'
 
+const InfiniteQueryRoute = InfiniteQueryRouteImport.update({
+  id: '/infinite-query',
+  path: '/infinite-query',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +25,39 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/infinite-query': typeof InfiniteQueryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/infinite-query': typeof InfiniteQueryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/infinite-query': typeof InfiniteQueryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/infinite-query'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/infinite-query'
+  id: '__root__' | '/' | '/infinite-query'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  InfiniteQueryRoute: typeof InfiniteQueryRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/infinite-query': {
+      id: '/infinite-query'
+      path: '/infinite-query'
+      fullPath: '/infinite-query'
+      preLoaderRoute: typeof InfiniteQueryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +70,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  InfiniteQueryRoute: InfiniteQueryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

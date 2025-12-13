@@ -81,8 +81,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
-        {children}
+      <body className="min-h-screen flex flex-col">
+        <nav className="p-4 space-x-4 flex justify-center">
+          <Link to="/">Basic Example</Link>
+          <Link to="/infinite-query">Infinite Query Example</Link>
+        </nav>
+        <div className="grid place-items-center flex-grow">{children}</div>
         <TanStackRouterDevtools position="bottom-right" />
         <ReactQueryDevtools buttonPosition="bottom-left" />
         <Scripts />
