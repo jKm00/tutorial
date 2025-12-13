@@ -24,7 +24,7 @@ const getWeapons = createServerFn()
       return {
         weapons: [],
         total: weapons.length,
-        nextOffset: data.offset,
+        nextOffset: undefined,
       };
     }
 
@@ -55,12 +55,16 @@ function RouteComponent() {
     queryKey: ["weapons"],
     queryFn: (ctx) =>
       getWeapons({ data: { limit: LIMIT, offset: ctx.pageParam } }),
-    getNextPageParam: (lastGroup) => lastGroup.nextOffset,
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
     initialPageParam: 0,
   });
 
   const parentRef = React.useRef<HTMLDivElement>(null);
 
+  // Go from
+  // [[weapon1, weapon2], [weapon3, weapon4]]
+  // To
+  // [weapon1, weapon2, weapon3, weapon4]
   const allWeapons = data ? data.pages.flatMap((d) => d.weapons) : [];
 
   const weaponVirtualizer = useVirtualizer({
