@@ -34,7 +34,7 @@ TanStack examples for the different TanStack libraris.
 | [Advanced Fetching](./tanstack/advanced-fetching)   | [Link](https://www.youtube.com/watch?v=6okJf-OODwY&t=19s)               | Complete    | Complex data fetching scenarios           |
 | [Error Handling](./tanstack/error-handling)         | -                                                                       | In-progress | Error handling with React Query           |
 | [Theme Toggle](./tanstack/theme-toggle)             | [Link](https://www.youtube.com/watch?v=dXB1ru8BTzg&pp=0gcJCSkKAYcqIYzv) | Complete    | Theme system implementation               |
-| [Virtualization](./tanstack/virtualization)         | -                                                                       | In-progress | List virtualization with TanStack Virtual |
+| [Virtualization](./tanstack/virtualization)         | [Kunk](https://www.youtube.com/watch?v=1lcod2ao03o)                     | Complete    | List virtualization with TanStack Virtual |
 | [Optimistic Updates](./tanstack/optimistic-updates) | [Link](https://www.youtube.com/watch?v=CH8Xhg6obgs&t=37s)               | Complete    | Optimistic UI updates pattern             |
 
 ### Deployment
