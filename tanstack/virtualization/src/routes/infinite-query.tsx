@@ -118,7 +118,7 @@ function RouteComponent() {
             }}
             className="absolute top-0 left-0 w-full truncate"
           >
-            {weapons[virtualItem.index].name}
+            {allWeapons[virtualItem.index].name}
           </div>
         ))}
       </div>
