@@ -18,7 +18,7 @@ function Home() {
   });
 
   return (
-    <div ref={parentRef} className="overflow-auto min-w-[300px] h-[400px]">
+    <div ref={parentRef} className="overflow-auto min-w-75 h-100">
       <div
         style={{
           height: `${rowVirtualizer.getTotalSize()}px`,
