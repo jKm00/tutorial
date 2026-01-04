@@ -16,13 +16,14 @@ cd <category>/<example>
 
 Fundamental development patterns and practices.
 
-| Example                                           | Video                                                      | Status      | Description                              |
-| ------------------------------------------------- | ---------------------------------------------------------- | ----------- | ---------------------------------------- |
-| [Debouncing](./concepts/debouncing)               | [Link](https://www.youtube.com/watch?v=g3dXk9BKwtM)        | Complete    | Debounce implementation with React hooks |
-| [Feature Flags](./concepts/feature-flags)         | [Link](https://www.youtube.com/watch?v=0abX5aZhw_k&t=12s)  | Complete    | Feature flag system patterns             |
-| [Monorepo](./concepts/monorepo)                   | [Link](https://www.youtube.com/watch?v=WsoJHvmA07o&t=641s) | Complete    | pnpm workspace multi-app setup           |
-| [Project Structure](./concepts/project-structure) | [Link](https://www.youtube.com/watch?v=9MMgIRmDhXw&t=10s)  | Complete    | Full-stack project organization          |
-| [Websockets](./concepts/websockets)               | -                                                          | In-progress | WebSocket server implementation          |
+| Example                                                 | Video                                                      | Status      | Description                                    |
+| ------------------------------------------------------- | ---------------------------------------------------------- | ----------- | ---------------------------------------------- |
+| [Dependency Injection](./concepts/dependency-injection) | [Link](https://youtu.be/gPPfm6V5_rA)                       | Complete    | Dependency injection to make more modular code |
+| [Debouncing](./concepts/debouncing)                     | [Link](https://www.youtube.com/watch?v=g3dXk9BKwtM)        | Complete    | Debounce implementation with React hooks       |
+| [Feature Flags](./concepts/feature-flags)               | [Link](https://www.youtube.com/watch?v=0abX5aZhw_k&t=12s)  | Complete    | Feature flag system patterns                   |
+| [Monorepo](./concepts/monorepo)                         | [Link](https://www.youtube.com/watch?v=WsoJHvmA07o&t=641s) | Complete    | pnpm workspace multi-app setup                 |
+| [Project Structure](./concepts/project-structure)       | [Link](https://www.youtube.com/watch?v=9MMgIRmDhXw&t=10s)  | Complete    | Full-stack project organization                |
+| [Websockets](./concepts/websockets)                     | -                                                          | In-progress | WebSocket server implementation                |
 
 ### TanStack
 
