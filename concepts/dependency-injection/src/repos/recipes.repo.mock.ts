@@ -1,4 +1,5 @@
 import type { NewRecipe, Recipe } from "../types.js";
+import type { IRecipesRepo } from "./recipes.repo.interface.js";
 
 export class RecipesRepoMock implements IRecipesRepo {
   private recipes: Recipe[] = [
