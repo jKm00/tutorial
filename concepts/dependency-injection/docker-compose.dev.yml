@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: secretdevpassword
+      POSTGRES_DB: tutorial
+    ports:
+      - 5432:5432
+    volumes:
+      - tutorial-dependency-injection:/var/lib/postgresql/data
+
+volumes:
+  tutorial-dependency-injection:
