@@ -1,26 +1,28 @@
-import { recipesRepo } from "../repos/recipes.repo.js";
-import type { NewRecipe, Recipe } from "../types.js";
+import type { IRecipesRepo } from "../repos/recipes.repo.interface.js";
+import type { NewRecipe } from "../types.js";
 
-async function getRecipes() {
-  return await recipesRepo.getAll();
-}
+export class RecipesService {
+  private repo: IRecipesRepo;
 
-async function getRecipe(id: string) {
-  const recipe = await recipesRepo.getById(id);
-
-  if (!recipe) {
-    throw new Error(`Recipe with id ${id} not found`);
+  constructor(repo: IRecipesRepo) {
+    this.repo = repo;
   }
 
-  return recipe;
-}
+  async getRecipes() {
+    return await this.repo.getAll();
+  }
 
-async function saveRecipe(recipe: NewRecipe) {
-  return await recipesRepo.save(recipe);
-}
+  async getRecipe(id: string) {
+    const recipe = await this.repo.getById(id);
 
-export const recipesService = {
-  getRecipes,
-  getRecipe,
-  saveRecipe,
-};
+    if (!recipe) {
+      throw new Error(`Recipe with id ${id} not found`);
+    }
+
+    return recipe;
+  }
+
+  async saveRecipe(recipe: NewRecipe) {
+    return await this.repo.save(recipe);
+  }
+}

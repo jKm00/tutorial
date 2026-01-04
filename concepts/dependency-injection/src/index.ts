@@ -1,7 +1,5 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import type { NewRecipe } from "./types.js";
-import { recipesService } from "./services/recipes.service.js";
 import { recipesController } from "./controllers/recipes.controller.js";
 
 const app = new Hono().basePath("/api");

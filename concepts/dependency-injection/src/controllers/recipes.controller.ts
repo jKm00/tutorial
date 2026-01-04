@@ -1,8 +1,12 @@
 import { Hono } from "hono";
-import { recipesService } from "../services/recipes.service.js";
 import type { NewRecipe } from "../types.js";
+import { RecipesService } from "../services/recipes.service.js";
+import { RecipesRepo } from "../repos/recipes.repo.js";
 
 export const recipesController = new Hono();
+
+const repo = new RecipesRepo();
+const recipesService = new RecipesService(repo);
 
 recipesController
   .get("/recipes", (c) => {
@@ -13,9 +17,9 @@ recipesController
     const id = c.req.param("id");
     try {
       const recipe = recipesService.getRecipe(id);
-      return c.json({ recipe });
+      return c.json({ recipe }, 200);
     } catch (error) {
-      return c.json({ error });
+      return c.json({ error }, 500);
     }
   })
   .post("/recipes", (c) => {

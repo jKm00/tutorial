@@ -1,9 +1,6 @@
 import type { NewRecipe, Recipe } from "../types.js";
-import type { IRecipeRepo } from "./recipes.repo.interface.js";
 
-export class RecipesRepoMock implements IRecipeRepo {
-  private static instance: IRecipeRepo | null = null;
-
+export class RecipesRepoMock implements IRecipesRepo {
   private recipes: Recipe[] = [
     {
       id: crypto.randomUUID(),
@@ -14,15 +11,6 @@ export class RecipesRepoMock implements IRecipeRepo {
         "Put all dry ingredients in a bow & stir, Add all liquide and stir, Heat up a pan, Add butter to pan, Poor batter into pan & fry for 2-4 minutes before flipping it, Continue til you run out of batter",
     },
   ];
-
-  private constructor() {}
-
-  static getInstance() {
-    if (!RecipesRepoMock.instance) {
-      RecipesRepoMock.instance = new RecipesRepoMock();
-    }
-    return RecipesRepoMock.instance;
-  }
 
   async getAll() {
     return this.recipes;
