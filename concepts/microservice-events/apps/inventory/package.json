@@ -1,0 +1,16 @@
+{
+  "name": "inventory",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "hono": "^4.12.5"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.8",
+    "@types/bun": "latest"
+  }
+}
+

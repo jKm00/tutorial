@@ -1,0 +1,7 @@
+{
+  "name": "mircroservice-events",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ]
+}
