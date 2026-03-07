@@ -5,7 +5,8 @@
   },
   "dependencies": {
     "amqplib": "^0.10.9",
-    "hono": "^4.12.5"
+    "hono": "^4.12.5",
+    "picocolors": "^1.1.1"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.8",
