@@ -1,0 +1,1194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Microservice Events Architecture</title>
+    <style>
+      :root {
+        --bg-base: #050510;
+        --text-main: #e2e8f0;
+        --text-muted: #94a3b8;
+
+        /* Neon Accents */
+        --accent-blue: #3b82f6;
+        --accent-purple: #8b5cf6;
+        --accent-teal: #14b8a6;
+        --accent-red: #ef4444;
+        --accent-orange: #f59e0b;
+
+        /* Gradients */
+        --grad-order: linear-gradient(
+          135deg,
+          rgba(59, 130, 246, 0.15) 0%,
+          rgba(30, 64, 175, 0.08) 100%
+        );
+        --grad-inventory: linear-gradient(
+          135deg,
+          rgba(20, 184, 166, 0.15) 0%,
+          rgba(15, 118, 110, 0.08) 100%
+        );
+        --grad-cart: linear-gradient(
+          135deg,
+          rgba(245, 158, 11, 0.15) 0%,
+          rgba(180, 83, 9, 0.08) 100%
+        );
+        --grad-email: linear-gradient(
+          135deg,
+          rgba(139, 92, 246, 0.15) 0%,
+          rgba(91, 33, 182, 0.08) 100%
+        );
+        --grad-broker: linear-gradient(
+          135deg,
+          rgba(236, 72, 153, 0.2) 0%,
+          rgba(190, 24, 93, 0.1) 100%
+        );
+        --grad-overlay: linear-gradient(
+          180deg,
+          rgba(15, 23, 42, 0.85) 0%,
+          rgba(15, 23, 42, 0.98) 100%
+        );
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family:
+          "Outfit",
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+
+      body {
+        background-color: var(--bg-base);
+        color: var(--text-main);
+        overflow: hidden;
+        width: 100vw;
+        height: 100vh;
+        background-image:
+          radial-gradient(
+            ellipse at 20% 50%,
+            rgba(59, 130, 246, 0.12),
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse at 80% 20%,
+            rgba(139, 92, 246, 0.08),
+            transparent 50%
+          ),
+          radial-gradient(
+            ellipse at 50% 100%,
+            rgba(20, 184, 166, 0.06),
+            transparent 50%
+          );
+        animation: bgPulse 10s infinite alternate ease-in-out;
+      }
+
+      @keyframes bgPulse {
+        0% {
+          background-position: 0% 0%;
+        }
+        100% {
+          background-position: 100% 100%;
+        }
+      }
+
+      /* Canvas Area */
+      #canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* Persistent Element System */
+      .element {
+        position: absolute;
+        opacity: 1;
+        transform-origin: center center;
+        transition:
+          opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
+          transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
+          filter 0.6s;
+        will-change: transform, opacity;
+      }
+
+      /* Element Lifecycle Classes */
+      .entering {
+        opacity: 0 !important;
+        transform: scale(0.95) translateY(20px) !important;
+        pointer-events: none;
+      }
+
+      .exiting {
+        opacity: 0 !important;
+        transform: scale(0.95) !important;
+        pointer-events: none;
+      }
+
+      .dimmed {
+        filter: blur(4px) brightness(0.4);
+        pointer-events: none;
+      }
+
+      /* Service Boxes */
+      .service-box {
+        width: 240px;
+        height: 180px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(12px);
+        box-shadow:
+          0 24px 48px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        /* Center the box based on left/top coordinates */
+        margin-left: -120px;
+        margin-top: -90px;
+        z-index: 30;
+      }
+
+      /* Idle Animations — subtle, slow floats */
+      @keyframes float1 {
+        0% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-4px);
+        }
+        100% {
+          transform: translateY(0);
+        }
+      }
+      @keyframes float2 {
+        0% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-3px);
+        }
+        100% {
+          transform: translateY(0);
+        }
+      }
+      @keyframes float3 {
+        0% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-5px);
+        }
+        100% {
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes pulseIcon {
+        0% {
+          opacity: 0.75;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.75;
+        }
+      }
+
+      /* Apply individual animations to an inner wrapper to not conflict with transition transforms */
+      .service-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+      }
+
+      .order .service-inner {
+        animation: float1 6s ease-in-out infinite;
+      }
+      .inventory .service-inner {
+        animation: float2 7s ease-in-out infinite 1s;
+      }
+      .cart .service-inner {
+        animation: float3 6.5s ease-in-out infinite 2s;
+      }
+      .email .service-inner {
+        animation: float1 8s ease-in-out infinite 0.5s;
+      }
+      .broker .service-inner {
+        animation: float2 6s ease-in-out infinite;
+      }
+
+      .service-box.order {
+        background: var(--grad-order);
+        border-top-color: rgba(59, 130, 246, 0.4);
+      }
+      .service-box.inventory {
+        background: var(--grad-inventory);
+        border-top-color: rgba(20, 184, 166, 0.4);
+      }
+      .service-box.cart {
+        background: var(--grad-cart);
+        border-top-color: rgba(245, 158, 11, 0.4);
+      }
+      .service-box.email {
+        background: var(--grad-email);
+        border-top-color: rgba(139, 92, 246, 0.4);
+      }
+
+      .service-box.broker {
+        background: var(--grad-broker);
+        border-top-color: rgba(236, 72, 153, 0.6);
+        border-bottom-color: rgba(236, 72, 153, 0.2);
+        box-shadow:
+          0 0 60px rgba(236, 72, 153, 0.15),
+          inset 0 0 20px rgba(236, 72, 153, 0.1);
+      }
+
+      .icon-container {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.03);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        margin-bottom: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 2px 10px rgba(255, 255, 255, 0.02);
+      }
+
+      .order .icon-container {
+        color: var(--accent-blue);
+        animation: pulseIcon 4s infinite;
+      }
+      .inventory .icon-container {
+        color: var(--accent-teal);
+      }
+      .cart .icon-container {
+        color: var(--accent-orange);
+      }
+      .email .icon-container {
+        color: var(--accent-purple);
+      }
+      .broker .icon-container {
+        color: #ec4899;
+        animation: pulseIcon 3s infinite;
+      }
+
+      .service-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }
+
+      .service-desc {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 6px;
+        font-weight: 500;
+      }
+
+      /* Broker Reveal Glow & Rings */
+      .broker-rings-container {
+        position: absolute;
+        left: -120px;
+        top: -90px;
+        width: 240px;
+        height: 180px;
+        z-index: 25;
+        pointer-events: none;
+      }
+
+      .broker-ring {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 240px;
+        height: 240px;
+        border-radius: 50%;
+        border: 1px solid rgba(236, 72, 153, 0.35);
+        opacity: 0;
+        animation: ripple 3s ease-out infinite;
+      }
+
+      .broker-ring:nth-child(2) {
+        animation-delay: 1.5s;
+      }
+
+      @keyframes ripple {
+        0% {
+          width: 240px;
+          height: 240px;
+          opacity: 0.6;
+        }
+        100% {
+          width: 500px;
+          height: 500px;
+          opacity: 0;
+        }
+      }
+
+      /* SVG Connections */
+      #svg-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .arrow-group {
+        transition: opacity 0.6s ease;
+      }
+
+      .arrow-path {
+        fill: none;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .arrow-flow {
+        fill: none;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 4 16;
+        animation: flowDash 1.8s linear infinite;
+        filter: drop-shadow(0 0 2px currentColor);
+      }
+
+      @keyframes flowDash {
+        to {
+          stroke-dashoffset: -20;
+        }
+      }
+
+      /* Error States */
+      @keyframes errorPulse {
+        0% {
+          box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+        }
+        100% {
+          box-shadow: 0 0 35px rgba(239, 68, 68, 0.35);
+        }
+      }
+
+      .error-state {
+        border-color: rgba(239, 68, 68, 0.6) !important;
+        animation: errorPulse 1.5s ease-in-out infinite alternate;
+      }
+
+      .broken-path {
+        stroke: var(--accent-red) !important;
+        stroke-dasharray: 3 10;
+        animation: brokenFlow 2s linear infinite;
+        filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.5));
+        opacity: 0.8;
+      }
+
+      @keyframes brokenFlow {
+        to {
+          stroke-dashoffset: -26;
+        }
+      }
+
+      /* Labels on arrows */
+      .arrow-label {
+        position: absolute;
+        /* Center the label */
+        margin-left: -60px;
+        margin-top: -16px;
+        width: 120px;
+        text-align: center;
+        background: linear-gradient(
+          90deg,
+          rgba(30, 41, 59, 0.9),
+          rgba(15, 23, 42, 0.9)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-main);
+        z-index: 40;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+      }
+
+      .arrow-label.error {
+        background: linear-gradient(
+          90deg,
+          rgba(153, 27, 27, 0.9),
+          rgba(127, 29, 29, 0.9)
+        );
+        border-color: rgba(239, 68, 68, 0.5);
+        color: #fecaca;
+        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
+      }
+
+      /* Overlays (Title/Pros/Cons) */
+      .overlay-card {
+        position: absolute;
+        background: var(--grad-overlay);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(24px);
+        border-radius: 24px;
+        padding: 48px;
+        box-shadow:
+          0 32px 64px rgba(0, 0, 0, 0.7),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        z-index: 100;
+      }
+
+      .title-card {
+        top: 50%;
+        left: 50%;
+        /* Offset margins for absolute center */
+        margin-left: -350px;
+        margin-top: -150px;
+        width: 700px;
+        text-align: center;
+      }
+
+      .title-card.entering {
+        transform: scale(0.95) translateY(40px);
+        opacity: 0;
+      }
+      .title-card.exiting {
+        transform: scale(0.95) translateY(-40px);
+        opacity: 0;
+      }
+
+      .title-card h1 {
+        font-size: 3.5rem;
+        margin-bottom: 24px;
+        background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -1px;
+        line-height: 1.1;
+      }
+
+      .title-card p {
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+        max-width: 80%;
+        margin: 0 auto;
+      }
+
+      .side-card {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 520px;
+      }
+
+      .side-card.entering {
+        transform: translate(-50%, -45%);
+        opacity: 0;
+      }
+      .side-card.exiting {
+        transform: translate(-50%, -55%);
+        opacity: 0;
+      }
+
+      .side-card h2 {
+        font-size: 2.2rem;
+        margin-bottom: 32px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        letter-spacing: -0.5px;
+      }
+
+      .side-card.cons h2 {
+        color: var(--accent-red);
+        text-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+      }
+      .side-card.pros h2 {
+        color: var(--accent-teal);
+        text-shadow: 0 0 20px rgba(20, 184, 166, 0.3);
+      }
+
+      .list-item {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 24px;
+        opacity: 0;
+        transform: translateX(-20px);
+        animation: slideInRight 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+
+      @keyframes slideInRight {
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .icon-box {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(255, 255, 255, 0.05);
+        font-size: 1.2rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .cons .icon-box {
+        color: var(--accent-red);
+        background: rgba(239, 68, 68, 0.1);
+        border-color: rgba(239, 68, 68, 0.2);
+      }
+      .pros .icon-box {
+        color: var(--accent-teal);
+        background: rgba(20, 184, 166, 0.1);
+        border-color: rgba(20, 184, 166, 0.2);
+      }
+
+      .text h3 {
+        font-size: 1.15rem;
+        margin-bottom: 6px;
+        color: white;
+        font-weight: 600;
+      }
+
+      .text p {
+        font-size: 0.95rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+      }
+    </style>
+    <!-- Google Fonts for better typography -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="canvas">
+      <!-- SVG Canvas: Using a 100vw/100vh system and viewBox 0 0 100 100 with preserveAspectRatio="none"
+             allows us to map percentages 0-100 directly to SVG coordinates! -->
+      <svg
+        id="svg-layer"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+      ></svg>
+
+      <!-- HTML Elements Layer -->
+      <div id="html-layer"></div>
+    </div>
+
+    <script>
+      // Coordinates: percentages 0-100, maps directly to SVG viewBox="0 0 100 100"
+      const coords = {
+        orderHttp: { x: 25, y: 50 },
+        invHttp: { x: 75, y: 50 },
+        cartHttp: { x: 75, y: 25 },
+        emailHttp: { x: 75, y: 75 },
+        broker: { x: 50, y: 50 },
+        orderEda: { x: 15, y: 50 },
+        invEda: { x: 85, y: 26 },
+        cartEda: { x: 85, y: 50 },
+        emailEda: { x: 85, y: 74 },
+      };
+
+      // Box half-width in SVG % units (240px box on ~1920px screen ≈ 6.25%)
+      const hw = 6.5;
+
+      function getPath(a, b, curveOffY) {
+        var sx = coords[a].x + hw;
+        var sy = coords[a].y;
+        var ex = coords[b].x - hw;
+        var ey = coords[b].y;
+        if (!curveOffY) {
+          return "M " + sx + " " + sy + " L " + ex + " " + ey;
+        }
+        var mx = (sx + ex) / 2;
+        var my = ey + curveOffY;
+        return (
+          "M " + sx + " " + sy + " Q " + mx + " " + my + " " + ex + " " + ey
+        );
+      }
+
+      function getMid(a, b) {
+        return {
+          x: (coords[a].x + coords[b].x) / 2,
+          y: (coords[a].y + coords[b].y) / 2,
+        };
+      }
+
+      function svc(id, cls, icon, name, desc, cx, cy, extraStyle) {
+        var style = "left:" + cx + "vw;top:" + cy + "vh;" + (extraStyle || "");
+        return (
+          '<div class="element service-box ' +
+          cls +
+          '" id="' +
+          id +
+          '" style="' +
+          style +
+          '">' +
+          '<div class="service-inner"><div class="icon-container">' +
+          icon +
+          "</div>" +
+          '<div class="service-name">' +
+          name +
+          "</div>" +
+          '<div class="service-desc">' +
+          desc +
+          "</div></div></div>"
+        );
+      }
+
+      function arr(id, stroke, d, extra) {
+        return (
+          '<g class="element arrow-group" id="' +
+          id +
+          '">' +
+          '<path class="arrow-path" stroke="' +
+          stroke +
+          '" opacity="0.3" d="' +
+          d +
+          '" />' +
+          '<path class="arrow-flow" stroke="' +
+          stroke +
+          '" d="' +
+          d +
+          '" ' +
+          (extra || "") +
+          "/>" +
+          "</g>"
+        );
+      }
+
+      function lbl(id, text, cx, cy, extraStyle) {
+        var style = "left:" + cx + "vw;top:" + cy + "vh;" + (extraStyle || "");
+        return (
+          '<div class="element arrow-label" id="' +
+          id +
+          '" style="' +
+          style +
+          '">' +
+          text +
+          "</div>"
+        );
+      }
+
+      var c = coords;
+      var brokerPath = "M " + (c.broker.x + hw) + " " + c.broker.y;
+
+      var Elements = {
+        "cons-card": {
+          type: "html",
+          html:
+            '<div class="element overlay-card side-card cons" id="cons-card">' +
+            "<h2>HTTP Problems</h2>" +
+            '<div class="list-item" style="animation-delay:0.1s"><div class="icon-box">🔗</div><div class="text"><h3>Tight Coupling</h3><p>Order Service must know every downstream service.</p></div></div>' +
+            '<div class="list-item" style="animation-delay:0.35s"><div class="icon-box">🔧</div><div class="text"><h3>Code Changes Required</h3><p>Adding a new service means modifying Order Service code.</p></div></div>' +
+            '<div class="list-item" style="animation-delay:0.6s"><div class="icon-box">💥</div><div class="text"><h3>No Retry Mechanism</h3><p>A failed request is simply lost — no built-in recovery.</p></div></div>' +
+            '<div class="list-item" style="animation-delay:0.85s"><div class="icon-box">⏳</div><div class="text"><h3>Cascading Failures</h3><p>One slow service blocks the entire checkout flow.</p></div></div>' +
+            "</div>",
+        },
+        "pros-card": {
+          type: "html",
+          html:
+            '<div class="element overlay-card side-card pros" id="pros-card">' +
+            "<h2>Event-Driven Benefits</h2>" +
+            '<div class="list-item" style="animation-delay:0.1s"><div class="icon-box">🚀</div><div class="text"><h3>Total Decoupling</h3><p>Order Service just publishes — no knowledge of consumers.</p></div></div>' +
+            '<div class="list-item" style="animation-delay:0.35s"><div class="icon-box">➕</div><div class="text"><h3>Extensible by Design</h3><p>Add new services without touching Order Service at all.</p></div></div>' +
+            '<div class="list-item" style="animation-delay:0.6s"><div class="icon-box">🛡️</div><div class="text"><h3>Built-in Resilience</h3><p>Messages persist — consumers process when they are ready.</p></div></div>' +
+            '<div class="list-item" style="animation-delay:0.85s"><div class="icon-box">📈</div><div class="text"><h3>Scales Horizontally</h3><p>Each consumer scales independently based on its own load.</p></div></div>' +
+            "</div>",
+        },
+
+        "srv-order-http": {
+          type: "html",
+          html: svc(
+            "srv-order-http",
+            "order",
+            "🛒",
+            "Order Service",
+            "Checkout Flow",
+            c.orderHttp.x,
+            c.orderHttp.y,
+          ),
+        },
+        "srv-inv-http": {
+          type: "html",
+          html: svc(
+            "srv-inv-http",
+            "inventory",
+            "📦",
+            "Inventory Service",
+            "Reserves Stock",
+            c.invHttp.x,
+            c.invHttp.y,
+          ),
+        },
+        "srv-inv-error": {
+          type: "html",
+          html: svc(
+            "srv-inv-error",
+            "inventory error-state",
+            "📦",
+            "Inventory Service",
+            "Reserves Stock",
+            c.invHttp.x,
+            c.invHttp.y,
+          ),
+        },
+        "srv-cart-http": {
+          type: "html",
+          html: svc(
+            "srv-cart-http",
+            "cart",
+            "🛒",
+            "Cart Service",
+            "Clears Session",
+            c.cartHttp.x,
+            c.cartHttp.y,
+          ),
+        },
+        "srv-email-http": {
+          type: "html",
+          html: svc(
+            "srv-email-http",
+            "email",
+            "✉️",
+            "Email Service",
+            "Sends Receipt",
+            c.emailHttp.x,
+            c.emailHttp.y,
+          ),
+        },
+
+        "srv-order-eda": {
+          type: "html",
+          html: svc(
+            "srv-order-eda",
+            "order",
+            "🛒",
+            "Order Service",
+            "Event Publisher",
+            c.orderEda.x,
+            c.orderEda.y,
+          ),
+        },
+        "srv-inv-eda": {
+          type: "html",
+          html: svc(
+            "srv-inv-eda",
+            "inventory",
+            "📦",
+            "Inventory Service",
+            "Consumer",
+            c.invEda.x,
+            c.invEda.y,
+          ),
+        },
+        "srv-cart-eda": {
+          type: "html",
+          html: svc(
+            "srv-cart-eda",
+            "cart",
+            "🛒",
+            "Cart Service",
+            "Consumer",
+            c.cartEda.x,
+            c.cartEda.y,
+          ),
+        },
+        "srv-email-eda": {
+          type: "html",
+          html: svc(
+            "srv-email-eda",
+            "email",
+            "✉️",
+            "Email Service",
+            "Consumer",
+            c.emailEda.x,
+            c.emailEda.y,
+          ),
+        },
+
+        "srv-broker": {
+          type: "html",
+          html:
+            '<div class="element" id="srv-broker" style="left:' +
+            c.broker.x +
+            "vw;top:" +
+            c.broker.y +
+            'vh;">' +
+            '<div class="broker-rings-container"><div class="broker-ring"></div><div class="broker-ring"></div></div>' +
+            '<div class="service-box broker" style="margin-left:-120px;margin-top:-90px;">' +
+            '<div class="service-inner"><div class="icon-container">⚡</div><div class="service-name">Event Broker</div><div class="service-desc">Kafka / RabbitMQ</div></div>' +
+            "</div></div>",
+        },
+
+        "arr-order-inv": {
+          type: "svg",
+          html: arr(
+            "arr-order-inv",
+            "var(--accent-teal)",
+            getPath("orderHttp", "invHttp"),
+          ),
+        },
+        "arr-order-inv-err": {
+          type: "svg",
+          html: arr(
+            "arr-order-inv-err",
+            "var(--accent-red)",
+            getPath("orderHttp", "invHttp"),
+            'class="arrow-path broken-path"',
+          ),
+        },
+        "arr-order-cart": {
+          type: "svg",
+          html: arr(
+            "arr-order-cart",
+            "var(--accent-orange)",
+            getPath("orderHttp", "cartHttp", -12),
+          ),
+        },
+        "arr-order-email": {
+          type: "svg",
+          html: arr(
+            "arr-order-email",
+            "var(--accent-purple)",
+            getPath("orderHttp", "emailHttp", 12),
+          ),
+        },
+        "arr-eda-pub": {
+          type: "svg",
+          html: arr(
+            "arr-eda-pub",
+            "var(--accent-blue)",
+            getPath("orderEda", "broker"),
+          ),
+        },
+
+        "arr-eda-sub-inv": {
+          type: "svg",
+          html: (function () {
+            var d =
+              brokerPath +
+              " Q " +
+              (c.broker.x + c.invEda.x) / 2 +
+              " " +
+              c.invEda.y +
+              " " +
+              (c.invEda.x - hw) +
+              " " +
+              c.invEda.y;
+            return arr("arr-eda-sub-inv", "var(--accent-teal)", d);
+          })(),
+        },
+        "arr-eda-sub-cart": {
+          type: "svg",
+          html: (function () {
+            var d = brokerPath + " L " + (c.cartEda.x - hw) + " " + c.cartEda.y;
+            return arr("arr-eda-sub-cart", "var(--accent-orange)", d);
+          })(),
+        },
+        "arr-eda-sub-email": {
+          type: "svg",
+          html: (function () {
+            var d =
+              brokerPath +
+              " Q " +
+              (c.broker.x + c.emailEda.x) / 2 +
+              " " +
+              c.emailEda.y +
+              " " +
+              (c.emailEda.x - hw) +
+              " " +
+              c.emailEda.y;
+            return arr("arr-eda-sub-email", "var(--accent-purple)", d);
+          })(),
+        },
+
+        "lbl-order-inv": {
+          type: "html",
+          html: lbl(
+            "lbl-order-inv",
+            "HTTP POST /reserve",
+            getMid("orderHttp", "invHttp").x,
+            getMid("orderHttp", "invHttp").y - 4,
+          ),
+        },
+        "lbl-order-cart": {
+          type: "html",
+          html: lbl(
+            "lbl-order-cart",
+            "HTTP POST /cart-update",
+            getMid("orderHttp", "cartHttp").x,
+            getMid("orderHttp", "cartHttp").y - 10,
+          ),
+        },
+        "lbl-order-email": {
+          type: "html",
+          html: lbl(
+            "lbl-order-email",
+            "HTTP POST /send-confirm",
+            getMid("orderHttp", "emailHttp").x,
+            getMid("orderHttp", "emailHttp").y + 6,
+          ),
+        },
+        "lbl-err": {
+          type: "html",
+          html: '<div class="element arrow-label" id="lbl-err" style="left:50vw;top:44vh;width:130px;margin-left:-65px;border-color:rgba(239,68,68,0.5);color:#fca5a5;background:linear-gradient(90deg,rgba(80,10,10,0.9),rgba(60,10,10,0.9));">⚠ Network Error</div>',
+        },
+        "lbl-eda-pub": {
+          type: "html",
+          html: lbl(
+            "lbl-eda-pub",
+            "Publish: order.placed",
+            getMid("orderEda", "broker").x,
+            getMid("orderEda", "broker").y - 4,
+            "width:160px;margin-left:-80px;",
+          ),
+        },
+        "lbl-eda-inv": {
+          type: "html",
+          html: lbl(
+            "lbl-eda-inv",
+            "Subscribe: order.placed",
+            getMid("broker", "invEda").x,
+            getMid("broker", "invEda").y - 5,
+            "width:170px;margin-left:-85px;",
+          ),
+        },
+        "lbl-eda-cart": {
+          type: "html",
+          html: lbl(
+            "lbl-eda-cart",
+            "Subscribe: order.placed",
+            getMid("broker", "cartEda").x,
+            getMid("broker", "cartEda").y - 4,
+            "width:170px;margin-left:-85px;",
+          ),
+        },
+        "lbl-eda-email": {
+          type: "html",
+          html: lbl(
+            "lbl-eda-email",
+            "Subscribe: order.placed",
+            getMid("broker", "emailEda").x,
+            getMid("broker", "emailEda").y + 4,
+            "width:170px;margin-left:-85px;",
+          ),
+        },
+      };
+
+      var frames = [
+        { elements: ["srv-order-http", "srv-inv-http"] },
+        {
+          elements: [
+            "srv-order-http",
+            "srv-inv-http",
+            "arr-order-inv",
+            "lbl-order-inv",
+          ],
+        },
+        {
+          elements: [
+            "srv-order-http",
+            "srv-inv-error",
+            "arr-order-inv-err",
+            "lbl-err",
+          ],
+        },
+        {
+          elements: [
+            "srv-order-http",
+            "srv-inv-http",
+            "arr-order-inv",
+            "lbl-order-inv",
+            "srv-cart-http",
+            "arr-order-cart",
+            "lbl-order-cart",
+          ],
+        },
+        {
+          elements: [
+            "srv-order-http",
+            "srv-inv-http",
+            "arr-order-inv",
+            "lbl-order-inv",
+            "srv-cart-http",
+            "arr-order-cart",
+            "lbl-order-cart",
+            "srv-email-http",
+            "arr-order-email",
+            "lbl-order-email",
+          ],
+        },
+        {
+          elements: [
+            "cons-card",
+            "srv-order-http",
+            "srv-inv-http",
+            "arr-order-inv",
+            "srv-cart-http",
+            "arr-order-cart",
+            "srv-email-http",
+            "arr-order-email",
+          ],
+          dimBg: true,
+        },
+        { elements: ["srv-broker"] },
+        {
+          elements: [
+            "srv-order-eda",
+            "srv-broker",
+            "arr-eda-pub",
+            "lbl-eda-pub",
+            "srv-inv-eda",
+            "srv-cart-eda",
+            "srv-email-eda",
+            "arr-eda-sub-inv",
+            "arr-eda-sub-cart",
+            "arr-eda-sub-email",
+            "lbl-eda-inv",
+            "lbl-eda-cart",
+            "lbl-eda-email",
+          ],
+        },
+        {
+          elements: [
+            "pros-card",
+            "srv-order-eda",
+            "srv-broker",
+            "arr-eda-pub",
+            "srv-inv-eda",
+            "srv-cart-eda",
+            "srv-email-eda",
+            "arr-eda-sub-inv",
+            "arr-eda-sub-cart",
+            "arr-eda-sub-email",
+          ],
+          dimBg: true,
+        },
+      ];
+
+      var currentFrame = 0;
+      var htmlLayer = document.getElementById("html-layer");
+      var svgLayer = document.getElementById("svg-layer");
+      var activeNodes = {};
+
+      function renderFrame(index) {
+        var frameDef = frames[index];
+        var targetSet = {};
+        frameDef.elements.forEach(function (id) {
+          targetSet[id] = true;
+        });
+
+        // Exit elements no longer in frame
+        Object.keys(activeNodes).forEach(function (id) {
+          if (!targetSet[id]) {
+            var node = activeNodes[id];
+            node.classList.add("exiting");
+            delete activeNodes[id];
+            setTimeout(function () {
+              if (node.parentNode) node.parentNode.removeChild(node);
+            }, 600);
+          } else {
+            // Already present — update dim state, no animation
+            var node = activeNodes[id];
+            if (frameDef.dimBg && id.indexOf("-card") === -1) {
+              node.classList.add("dimmed");
+            } else {
+              node.classList.remove("dimmed");
+            }
+          }
+        });
+
+        // Enter new elements
+        frameDef.elements.forEach(function (id) {
+          if (activeNodes[id]) return;
+          var elDef = Elements[id];
+          var newNode;
+
+          if (elDef.type === "svg") {
+            var tmp = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "g",
+            );
+            // Parse via a temporary SVG wrapper
+            var wrap = document.createElement("div");
+            wrap.innerHTML =
+              '<svg xmlns="http://www.w3.org/2000/svg">' +
+              elDef.html +
+              "</svg>";
+            newNode = wrap.querySelector("g");
+          } else {
+            var wrap = document.createElement("div");
+            wrap.innerHTML = elDef.html.trim();
+            newNode = wrap.firstChild;
+          }
+
+          newNode.classList.add("entering");
+          if (frameDef.dimBg && id.indexOf("-card") === -1)
+            newNode.classList.add("dimmed");
+
+          if (elDef.type === "svg") {
+            svgLayer.appendChild(newNode);
+          } else {
+            htmlLayer.appendChild(newNode);
+          }
+
+          activeNodes[id] = newNode;
+
+          // Double rAF to ensure transition fires
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              if (activeNodes[id]) activeNodes[id].classList.remove("entering");
+            });
+          });
+        });
+      }
+
+      function nextFrame() {
+        if (currentFrame < frames.length - 1) {
+          currentFrame++;
+          renderFrame(currentFrame);
+        }
+      }
+      function prevFrame() {
+        if (currentFrame > 0) {
+          currentFrame--;
+          renderFrame(currentFrame);
+        }
+      }
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "ArrowRight" || e.key === " ") nextFrame();
+        if (e.key === "ArrowLeft") prevFrame();
+      });
+
+      renderFrame(0);
+    </script>
+  </body>
+</html>
+
