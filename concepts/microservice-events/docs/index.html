@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Microservice Events Architecture</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-base: #050508;
+      --bg-surface: rgba(20, 20, 24, 0.4);
+      --bg-card: rgba(18, 18, 22, 0.6);
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      
+      --accent-blue: #3b82f6;
+      --accent-teal: #14b8a6;
+      --accent-orange: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --accent-red: #ef4444;
+      --accent-pink: #ec4899;
+      
+      --glow-blue: rgba(59, 130, 246, 0.15);
+      --glow-teal: rgba(20, 184, 166, 0.15);
+      --glow-orange: rgba(245, 158, 11, 0.15);
+      --glow-purple: rgba(139, 92, 246, 0.15);
+      --glow-red: rgba(239, 68, 68, 0.15);
+      --glow-pink: rgba(236, 72, 153, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      font-family: 'Inter', system-ui, sans-serif;
+      /* Subtle radial ambient glows */
+      background-image: 
+        radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.03) 0%, transparent 40%),
+        radial-gradient(circle at 85% 50%, rgba(20, 184, 166, 0.03) 0%, transparent 40%);
+    }
+
+    h1, h2, h3, .service-name {
+      font-family: 'Outfit', system-ui, sans-serif;
+    }
+
+    /* Container */
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* SVG Layer */
+    #svg-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* HTML Layer */
+    #html-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    /* Base Element Classes */
+    .element {
+      position: absolute;
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      transition: 
+        opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
+        transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
+        left 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
+        top 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
+        filter 0.6s ease;
+      will-change: transform, opacity, left, top;
+    }
+
+    .entering {
+      opacity: 0 !important;
+      transform: scale(0.95) translateY(20px) !important;
+    }
+
+    .exiting {
+      opacity: 0 !important;
+      transform: scale(0.95) !important;
+    }
+
+    .dimmed {
+      filter: blur(8px) brightness(0.3) saturate(0.5);
+    }
+
+    /* Service Boxes */
+    .service-box {
+      width: 240px;
+      height: 180px;
+      margin-left: -120px;
+      margin-top: -90px;
+      border-radius: 20px;
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 
+        0 20px 40px -10px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      z-index: 30;
+      overflow: hidden;
+    }
+
+    /* Glow overlays for services */
+    .service-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 100%;
+      background: radial-gradient(120px circle at top center, var(--service-glow), transparent);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .service-box::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--service-accent), transparent);
+      opacity: 0.5;
+    }
+
+    .service-box.order { --service-glow: var(--glow-blue); --service-accent: var(--accent-blue); }
+    .service-box.inventory { --service-glow: var(--glow-teal); --service-accent: var(--accent-teal); }
+    .service-box.cart { --service-glow: var(--glow-orange); --service-accent: var(--accent-orange); }
+    .service-box.email { --service-glow: var(--glow-purple); --service-accent: var(--accent-purple); }
+    
+    .service-box.broker { 
+      --service-glow: var(--glow-pink); 
+      --service-accent: var(--accent-pink);
+      border-color: rgba(236, 72, 153, 0.15);
+      background: rgba(236, 72, 153, 0.03);
+      box-shadow: 
+        0 20px 40px -10px rgba(0, 0, 0, 0.5),
+        0 0 40px rgba(236, 72, 153, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+    .service-box.broker::after {
+      background: linear-gradient(90deg, transparent, var(--accent-pink), transparent);
+      opacity: 0.8;
+    }
+
+    .service-box.error-state {
+      --service-glow: var(--glow-red);
+      --service-accent: var(--accent-red);
+      border-color: rgba(239, 68, 68, 0.3);
+      animation: errorPulse 2s infinite alternate ease-in-out;
+    }
+
+    @keyframes errorPulse {
+      0% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.1); }
+      100% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.25); }
+    }
+
+    /* Idle Float Animations */
+    .float-1 { animation: float 6s ease-in-out infinite; }
+    .float-2 { animation: float 7s ease-in-out infinite 1s; }
+    .float-3 { animation: float 6.5s ease-in-out infinite 2s; }
+    .float-4 { animation: float 8s ease-in-out infinite 0.5s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 16px;
+      box-shadow: inset 0 2px 10px rgba(255, 255, 255, 0.02);
+      color: var(--service-accent);
+    }
+
+    .service-name {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-main);
+      letter-spacing: 0.2px;
+      margin-bottom: 4px;
+    }
+
+    .service-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Broker Rings */
+    .broker-rings {
+      position: absolute;
+      left: -120px; top: -90px;
+      width: 240px; height: 180px;
+      pointer-events: none;
+      z-index: 25;
+    }
+    .ring {
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      border: 1px solid rgba(236, 72, 153, 0.4);
+      opacity: 0;
+      animation: brokerRipple 4s cubic-bezier(0.1, 0.6, 0.3, 1) infinite;
+    }
+    .ring:nth-child(2) { animation-delay: 1.3s; }
+    .ring:nth-child(3) { animation-delay: 2.6s; }
+
+    @keyframes brokerRipple {
+      0% { width: 200px; height: 200px; opacity: 0.8; border-width: 2px; }
+      100% { width: 700px; height: 700px; opacity: 0; border-width: 1px; }
+    }
+
+    /* Labels */
+    .label {
+      position: absolute;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      background: rgba(15, 15, 20, 0.8);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      transform: translate(-50%, -50%);
+      white-space: nowrap;
+      z-index: 40;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .label.error {
+      background: rgba(40, 10, 10, 0.9);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+
+    /* SVG Arrows */
+    .arrow-base {
+      fill: none;
+      stroke-width: 1.5;
+      opacity: 0.2;
+    }
+    
+    .arrow-flow {
+      fill: none;
+      stroke-width: 1.5;
+      stroke-dasharray: 6 12;
+      animation: dashFlow 1s linear infinite;
+      filter: drop-shadow(0 0 4px currentColor);
+    }
+
+    .arrow-error {
+      stroke-dasharray: 4 8;
+      animation: dashFlowErr 1.5s linear infinite;
+      opacity: 0.8;
+      filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.6));
+    }
+
+    @keyframes dashFlow {
+      to { stroke-dashoffset: -18; }
+    }
+    @keyframes dashFlowErr {
+      to { stroke-dashoffset: -12; }
+    }
+
+    /* Cards */
+    .card-overlay {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 800px;
+      transform: translate(-50%, -50%);
+      background: rgba(12, 12, 16, 0.7);
+      backdrop-filter: blur(32px);
+      -webkit-backdrop-filter: blur(32px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 64px;
+      box-shadow: 
+        0 40px 80px -20px rgba(0, 0, 0, 0.8),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      z-index: 100;
+    }
+
+    .card-overlay.entering {
+      transform: translate(-50%, -45%) scale(0.98);
+      opacity: 0;
+    }
+    .card-overlay.exiting {
+      transform: translate(-50%, -55%) scale(0.98);
+      opacity: 0;
+    }
+
+    .card-title {
+      font-size: 3rem;
+      margin-bottom: 48px;
+      letter-spacing: -1px;
+      text-align: center;
+    }
+
+    .card-cons .card-title {
+      background: linear-gradient(135deg, #f87171, #dc2626);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 32px rgba(239, 68, 68, 0.2);
+    }
+
+    .card-pros .card-title {
+      background: linear-gradient(135deg, #2dd4bf, #0d9488);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 32px rgba(20, 184, 166, 0.2);
+    }
+
+    .bullet-list {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .bullet-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 24px;
+      opacity: 0;
+      transform: translateX(-20px);
+      animation: slideIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    @keyframes slideIn {
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .bullet-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .card-cons .bullet-icon {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .card-pros .bullet-icon {
+      background: rgba(20, 184, 166, 0.1);
+      border: 1px solid rgba(20, 184, 166, 0.2);
+    }
+
+    .bullet-text h3 {
+      font-size: 1.25rem;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+
+    .bullet-text p {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Dot Indicators */
+    .dots-container {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      z-index: 200;
+    }
+    
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      transition: all 0.4s ease;
+    }
+    
+    .dot.active {
+      background: rgba(255, 255, 255, 0.8);
+      transform: scale(1.5);
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas">
+    <svg id="svg-layer">
+      <defs>
+        <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent-blue)" opacity="0.8"/>
+        </marker>
+        <marker id="arrow-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent-teal)" opacity="0.8"/>
+        </marker>
+        <marker id="arrow-orange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent-orange)" opacity="0.8"/>
+        </marker>
+        <marker id="arrow-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent-purple)" opacity="0.8"/>
+        </marker>
+        <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent-red)" opacity="0.8"/>
+        </marker>
+      </defs>
+    </svg>
+    <div id="html-layer"></div>
+    <div class="dots-container" id="dots"></div>
+  </div>
+
+  <script>
+    // System Coordinates (% based mapping)
+    const POS = {
+      orderHttp: { x: 25, y: 50 },
+      invHttp:   { x: 75, y: 50 },
+      cartHttp:  { x: 75, y: 25 },
+      emailHttp: { x: 75, y: 75 },
+      
+      broker:    { x: 50, y: 50 },
+      
+      orderEda:  { x: 15, y: 50 },
+      invEda:    { x: 85, y: 26 },
+      cartEda:   { x: 85, y: 50 },
+      emailEda:  { x: 85, y: 74 },
+    };
+
+    // Helper functions for building HTML elements
+    const Svc = (id, theme, icon, name, desc, pos, animCls) => ({
+      id, type: 'html', pos,
+      html: `
+        <div class="element service-box ${theme}" id="${id}">
+          <div class="${animCls}" style="display:flex;flex-direction:column;align-items:center;width:100%">
+            <div class="icon-box">${icon}</div>
+            <div class="service-name">${name}</div>
+            <div class="service-desc">${desc}</div>
+          </div>
+        </div>`
+    });
+
+    const Lbl = (id, text, p1, p2, curveY, extraCls = '') => ({
+      id, type: 'html', isLabel: true, p1, p2, curveY,
+      html: `<div class="element label ${extraCls}" id="${id}">${text}</div>`
+    });
+
+    const Arr = (id, colorVar, p1, p2, curveY, isError = false) => ({
+      id, type: 'svg', p1, p2, curveY, colorVar, isError,
+      html: `<g class="element" id="${id}">
+               <path class="arrow-base" stroke="var(${colorVar})" />
+               <path class="arrow-flow ${isError ? 'arrow-error' : ''}" stroke="var(${colorVar})" marker-end="url(#arrow-${colorVar.split('-')[2].replace(')','')})" />
+             </g>`
+    });
+
+    // Element Registry
+    const Elements = {
+      // Services HTTP
+      'svc-order-http': Svc('svc-order-http', 'order', '🛒', 'Order Service', 'Checkout Flow', POS.orderHttp, 'float-1'),
+      'svc-inv-http': Svc('svc-inv-http', 'inventory', '📦', 'Inventory Service', 'Reserves Stock', POS.invHttp, 'float-2'),
+      'svc-inv-err': Svc('svc-inv-err', 'inventory error-state', '📦', 'Inventory Service', 'Reserves Stock', POS.invHttp, 'float-2'),
+      'svc-cart-http': Svc('svc-cart-http', 'cart', '🛍️', 'Cart Service', 'Clears Session', POS.cartHttp, 'float-3'),
+      'svc-email-http': Svc('svc-email-http', 'email', '✉️', 'Email Service', 'Sends Receipt', POS.emailHttp, 'float-4'),
+      
+      // Services EDA
+      'svc-order-eda': Svc('svc-order-eda', 'order', '🛒', 'Order Service', 'Event Publisher', POS.orderEda, 'float-1'),
+      'svc-inv-eda': Svc('svc-inv-eda', 'inventory', '📦', 'Inventory Service', 'Consumer', POS.invEda, 'float-2'),
+      'svc-cart-eda': Svc('svc-cart-eda', 'cart', '🛍️', 'Cart Service', 'Consumer', POS.cartEda, 'float-3'),
+      'svc-email-eda': Svc('svc-email-eda', 'email', '✉️', 'Email Service', 'Consumer', POS.emailEda, 'float-4'),
+      
+      // Broker
+      'svc-broker': {
+        id: 'svc-broker', type: 'html', pos: POS.broker,
+        html: `
+          <div class="element" id="svc-broker">
+            <div class="broker-rings">
+              <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+            </div>
+            <div class="service-box broker float-1">
+              <div style="display:flex;flex-direction:column;align-items:center;width:100%">
+                <div class="icon-box" style="border-radius:50%; width:56px; height:56px; font-size:28px;">⚡</div>
+                <div class="service-name">Event Broker</div>
+                <div class="service-desc">Kafka / RabbitMQ</div>
+              </div>
+            </div>
+          </div>`
+      },
+
+      // Connections HTTP
+      'arr-h-inv': Arr('arr-h-inv', '--accent-teal', POS.orderHttp, POS.invHttp, 0),
+      'arr-h-inv-err': Arr('arr-h-inv-err', '--accent-red', POS.orderHttp, POS.invHttp, 0, true),
+      'arr-h-cart': Arr('arr-h-cart', '--accent-orange', POS.orderHttp, POS.cartHttp, -80),
+      'arr-h-email': Arr('arr-h-email', '--accent-purple', POS.orderHttp, POS.emailHttp, 80),
+
+      // Labels HTTP
+      'lbl-h-inv': Lbl('lbl-h-inv', 'HTTP POST /reserve', POS.orderHttp, POS.invHttp, 0),
+      'lbl-h-inv-err': Lbl('lbl-h-inv-err', '⚠ Network Error', POS.orderHttp, POS.invHttp, 0, 'error'),
+      'lbl-h-cart': Lbl('lbl-h-cart', 'HTTP POST /clear-cart', POS.orderHttp, POS.cartHttp, -80),
+      'lbl-h-email': Lbl('lbl-h-email', 'HTTP POST /send-confirm', POS.orderHttp, POS.emailHttp, 80),
+
+      // Connections EDA
+      'arr-e-pub': Arr('arr-e-pub', '--accent-blue', POS.orderEda, POS.broker, 0),
+      'arr-e-inv': Arr('arr-e-inv', '--accent-teal', POS.broker, POS.invEda, -60),
+      'arr-e-cart': Arr('arr-e-cart', '--accent-orange', POS.broker, POS.cartEda, 0),
+      'arr-e-email': Arr('arr-e-email', '--accent-purple', POS.broker, POS.emailEda, 60),
+
+      // Labels EDA
+      'lbl-e-pub': Lbl('lbl-e-pub', 'Publish: order.placed', POS.orderEda, POS.broker, 0),
+      'lbl-e-inv': Lbl('lbl-e-inv', 'Subscribe: order.placed', POS.broker, POS.invEda, -60),
+      'lbl-e-cart': Lbl('lbl-e-cart', 'Subscribe: order.placed', POS.broker, POS.cartEda, 0),
+      'lbl-e-email': Lbl('lbl-e-email', 'Subscribe: order.placed', POS.broker, POS.emailEda, 60),
+
+      // Cards
+      'card-cons': {
+        id: 'card-cons', type: 'html', pos: {x:50, y:50}, isCard: true,
+        html: `
+          <div class="element card-overlay card-cons" id="card-cons">
+            <h2 class="card-title">This Doesn't Scale</h2>
+            <div class="bullet-list">
+              <div class="bullet-item" style="animation-delay: 0.1s">
+                <div class="bullet-icon">🔗</div>
+                <div class="bullet-text"><h3>Tight Coupling</h3><p>Order Service must know the location and API of every downstream service.</p></div>
+              </div>
+              <div class="bullet-item" style="animation-delay: 0.2s">
+                <div class="bullet-icon">🔧</div>
+                <div class="bullet-text"><h3>Changes Required Every Time</h3><p>Adding a new service means modifying Order Service code and redeploying.</p></div>
+              </div>
+              <div class="bullet-item" style="animation-delay: 0.3s">
+                <div class="bullet-icon">💥</div>
+                <div class="bullet-text"><h3>Fragile by Design</h3><p>A single failed HTTP call can break the entire checkout. Retry logic must be built manually.</p></div>
+              </div>
+              <div class="bullet-item" style="animation-delay: 0.4s">
+                <div class="bullet-icon">⏳</div>
+                <div class="bullet-text"><h3>Cascading Failures</h3><p>One slow downstream service stalls the whole order flow for the user.</p></div>
+              </div>
+            </div>
+          </div>`
+      },
+      'card-pros': {
+        id: 'card-pros', type: 'html', pos: {x:50, y:50}, isCard: true,
+        html: `
+          <div class="element card-overlay card-pros" id="card-pros">
+            <h2 class="card-title">Event-Driven Benefits</h2>
+            <div class="bullet-list">
+              <div class="bullet-item" style="animation-delay: 0.1s">
+                <div class="bullet-icon">🚀</div>
+                <div class="bullet-text"><h3>Total Decoupling</h3><p>Order Service simply publishes an event. It knows nothing about who consumes it.</p></div>
+              </div>
+              <div class="bullet-item" style="animation-delay: 0.2s">
+                <div class="bullet-icon">➕</div>
+                <div class="bullet-text"><h3>Infinitely Extensible</h3><p>Add new consumer services listening to events without ever touching the Order Service.</p></div>
+              </div>
+              <div class="bullet-item" style="animation-delay: 0.3s">
+                <div class="bullet-icon">🛡️</div>
+                <div class="bullet-text"><h3>Built-in Resilience</h3><p>Messages persist in the broker. Consumers process them and retry on their own schedule.</p></div>
+              </div>
+              <div class="bullet-item" style="animation-delay: 0.4s">
+                <div class="bullet-icon">📈</div>
+                <div class="bullet-text"><h3>Independent Scaling</h3><p>Each consumer scales horizontally based entirely on its own individual load.</p></div>
+              </div>
+            </div>
+          </div>`
+      }
+    };
+
+    // The 9 Frames
+    const Frames = [
+      // 1. The Beginning
+      { items: ['svc-order-http', 'svc-inv-http'] },
+      // 2. HTTP Comm
+      { items: ['svc-order-http', 'svc-inv-http', 'arr-h-inv', 'lbl-h-inv'] },
+      // 3. Network Failure
+      { items: ['svc-order-http', 'svc-inv-err', 'arr-h-inv-err', 'lbl-h-inv-err'] },
+      // 4. Cart Added
+      { items: ['svc-order-http', 'svc-inv-http', 'arr-h-inv', 'lbl-h-inv', 'svc-cart-http', 'arr-h-cart', 'lbl-h-cart'] },
+      // 5. Email Added
+      { items: ['svc-order-http', 'svc-inv-http', 'arr-h-inv', 'lbl-h-inv', 'svc-cart-http', 'arr-h-cart', 'lbl-h-cart', 'svc-email-http', 'arr-h-email', 'lbl-h-email'] },
+      // 6. The Problem (Cons Card)
+      { items: ['card-cons', 'svc-order-http', 'svc-inv-http', 'arr-h-inv', 'svc-cart-http', 'arr-h-cart', 'svc-email-http', 'arr-h-email'], dimNodes: true },
+      // 7. Broker Intro
+      { items: ['svc-broker'] },
+      // 8. Full EDA
+      { items: ['svc-order-eda', 'svc-broker', 'svc-inv-eda', 'svc-cart-eda', 'svc-email-eda', 'arr-e-pub', 'lbl-e-pub', 'arr-e-inv', 'lbl-e-inv', 'arr-e-cart', 'lbl-e-cart', 'arr-e-email', 'lbl-e-email'] },
+      // 9. Benefits
+      { items: ['card-pros', 'svc-order-eda', 'svc-broker', 'svc-inv-eda', 'svc-cart-eda', 'svc-email-eda', 'arr-e-pub', 'arr-e-inv', 'arr-e-cart', 'arr-e-email'], dimNodes: true }
+    ];
+
+    let currentFrameIdx = 0;
+    let activeNodes = {};
+
+    const htmlLayer = document.getElementById('html-layer');
+    const svgLayer = document.getElementById('svg-layer');
+    const dotsContainer = document.getElementById('dots');
+
+    // Init Dots
+    Frames.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      dotsContainer.appendChild(dot);
+    });
+
+    function getAbsPx(percent, isX) {
+      return isX ? (percent / 100) * window.innerWidth : (percent / 100) * window.innerHeight;
+    }
+
+    // Dynamic Geometry updates
+    function updateGeometry() {
+      const boxHalfW = 120; // 240/2
+
+      Object.values(activeNodes).forEach(nodeObj => {
+        const { id, node, def } = nodeObj;
+        
+        if (def.type === 'html') {
+          if (!def.isCard && !def.isLabel) {
+            node.style.left = def.pos.x + 'vw';
+            node.style.top = def.pos.y + 'vh';
+          }
+          if (def.isLabel) {
+            const x1 = getAbsPx(def.p1.x, true);
+            const y1 = getAbsPx(def.p1.y, false);
+            const x2 = getAbsPx(def.p2.x, true);
+            const y2 = getAbsPx(def.p2.y, false);
+            const midX = (x1 + x2) / 2;
+            const midY = ((y1 + y2) / 2) + (def.curveY ? def.curveY / 2 : 0) - 20; // offset label up slightly
+            node.style.left = midX + 'px';
+            node.style.top = midY + 'px';
+          }
+        }
+
+        if (def.type === 'svg') {
+          const x1 = getAbsPx(def.p1.x, true) + boxHalfW + 10;
+          const y1 = getAbsPx(def.p1.y, false);
+          const x2 = getAbsPx(def.p2.x, true) - boxHalfW - 15; // arrow marker spacing
+          const y2 = getAbsPx(def.p2.y, false);
+          
+          let d = '';
+          if (!def.curveY) {
+            d = `M ${x1} ${y1} L ${x2} ${y2}`;
+          } else {
+            const midX = (x1 + x2) / 2;
+            const midY = y2 + def.curveY;
+            d = `M ${x1} ${y1} Q ${midX} ${midY} ${x2} ${y2}`;
+          }
+          
+          node.querySelectorAll('path').forEach(p => p.setAttribute('d', d));
+        }
+      });
+    }
+
+    window.addEventListener('resize', updateGeometry);
+
+    function renderFrame(idx) {
+      const frame = Frames[idx];
+      const targetIds = new Set(frame.items);
+
+      // Update Dots
+      document.querySelectorAll('.dot').forEach((dot, i) => {
+        dot.classList.toggle('active', i === idx);
+      });
+
+      // Exit old
+      Object.keys(activeNodes).forEach(id => {
+        if (!targetIds.has(id)) {
+          const { node } = activeNodes[id];
+          node.classList.add('exiting');
+          delete activeNodes[id];
+          setTimeout(() => { if (node.parentNode) node.parentNode.removeChild(node); }, 600);
+        } else {
+          // Update dim state for persisting elements
+          const { node, def } = activeNodes[id];
+          if (frame.dimNodes && !def.isCard) {
+            node.classList.add('dimmed');
+          } else {
+            node.classList.remove('dimmed');
+          }
+        }
+      });
+
+      // Enter new
+      frame.items.forEach(id => {
+        if (activeNodes[id]) return;
+        
+        const def = Elements[id];
+        let node;
+
+        if (def.type === 'svg') {
+          const temp = document.createElement('div');
+          temp.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg">${def.html}</svg>`;
+          node = temp.querySelector('g');
+          svgLayer.appendChild(node);
+        } else {
+          const temp = document.createElement('div');
+          temp.innerHTML = def.html.trim();
+          node = temp.firstChild;
+          htmlLayer.appendChild(node);
+        }
+
+        node.classList.add('entering');
+        if (frame.dimNodes && !def.isCard) {
+          node.classList.add('dimmed');
+        }
+
+        activeNodes[id] = { id, node, def };
+
+        // Double rAF to trigger animation transition
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (activeNodes[id]) activeNodes[id].node.classList.remove('entering');
+          });
+        });
+      });
+
+      // Recalculate geometry for new elements
+      updateGeometry();
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        if (currentFrameIdx < Frames.length - 1) {
+          currentFrameIdx++;
+          renderFrame(currentFrameIdx);
+        }
+      }
+      if (e.key === 'ArrowLeft') {
+        if (currentFrameIdx > 0) {
+          currentFrameIdx--;
+          renderFrame(currentFrameIdx);
+        }
+      }
+    });
+
+    // Initial Render
+    renderFrame(0);
+  </script>
+</body>
+</html>
