@@ -87,40 +87,27 @@
       z-index: 20;
     }
 
-    /* Base Element Classes */
+    /* Base Element: no transitions by default — persistent elements must never animate */
     .element {
       position: absolute;
       opacity: 1;
-      transform: scale(1) translateY(0);
-      transition: 
-        opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
-        transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
-        left 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
-        top 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
-        filter 0.6s ease;
-      will-change: transform, opacity, left, top;
     }
 
-    .entering {
-      opacity: 0 !important;
-      transform: scale(0.92) translateY(16px) !important;
-    }
+    /* Only elements actively transitioning get a transition applied via JS inline style */
 
-    .exiting {
-      opacity: 0 !important;
-      transform: scale(0.92) translateY(-16px) !important;
-    }
+    /* Service box enter: fade up */
+    .svc-entering  { opacity: 0; transform: translateY(14px) scale(0.95); }
+    .svc-exiting   { opacity: 0; transform: translateY(-8px) scale(0.97); }
 
-    /* Cards must scale from their own center, not from top-left */
-    .card-overlay.entering {
-      transform: translate(-50%, -50%) scale(0.92) !important;
-      opacity: 0 !important;
-    }
-    .card-overlay.exiting {
-      transform: translate(-50%, -50%) scale(0.92) !important;
-      opacity: 0 !important;
-    }
+    /* Labels & arrows: fade only, no positional shift (avoids centering-transform conflicts) */
+    .fade-entering { opacity: 0; }
+    .fade-exiting  { opacity: 0; }
 
+    /* Cards scale from true center (translate already on the element) */
+    .card-entering { opacity: 0; transform: translate(-50%, -50%) scale(0.94); }
+    .card-exiting  { opacity: 0; transform: translate(-50%, -50%) scale(0.94); }
+
+    /* Dimming: instant, no transition — prevents persistent elements fading in/out */
     .dimmed {
       filter: blur(8px) brightness(0.3) saturate(0.5);
     }
@@ -332,10 +319,6 @@
         0 40px 80px -20px rgba(0, 0, 0, 0.8),
         inset 0 1px 0 rgba(255, 255, 255, 0.05);
       z-index: 100;
-      /* Transition must include transform so the scale animates smoothly */
-      transition:
-        opacity 0.55s cubic-bezier(0.2, 0.8, 0.2, 1),
-        transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .card-title {
@@ -698,24 +681,54 @@
 
     window.addEventListener('resize', updateGeometry);
 
+    function enterClass(def) {
+      if (def.isCard)  return 'card-entering';
+      if (def.isLabel) return 'fade-entering';
+      if (def.type === 'svg') return 'fade-entering';
+      return 'svc-entering'; // service boxes
+    }
+
+    function exitClass(def) {
+      if (def.isCard)  return 'card-exiting';
+      if (def.isLabel) return 'fade-exiting';
+      if (def.type === 'svg') return 'fade-exiting';
+      return 'svc-exiting';
+    }
+
+    // Transition durations per type (ms)
+    function transitionStyle(def) {
+      const ease = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+      if (def.isCard) return `opacity 480ms ${ease}, transform 480ms ${ease}`;
+      if (def.isLabel || def.type === 'svg') return `opacity 350ms ${ease}`;
+      return `opacity 450ms ${ease}, transform 450ms ${ease}`; // service boxes
+    }
+
     function renderFrame(idx) {
       const frame = Frames[idx];
       const targetIds = new Set(frame.items);
+      const ANIM_DUR = 500; // max ms before DOM removal
 
       // Update Dots
       document.querySelectorAll('.dot').forEach((dot, i) => {
         dot.classList.toggle('active', i === idx);
       });
 
-      // Exit old
+      // ── EXIT elements no longer in frame ──────────────────────────────────
       Object.keys(activeNodes).forEach(id => {
         if (!targetIds.has(id)) {
-          const { node } = activeNodes[id];
-          node.classList.add('exiting');
+          const { node, def } = activeNodes[id];
           delete activeNodes[id];
-          setTimeout(() => { if (node.parentNode) node.parentNode.removeChild(node); }, 600);
+
+          // Set transition then exiting state (double-rAF ensures paint happens first)
+          node.style.transition = transitionStyle(def);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              node.classList.add(exitClass(def));
+              setTimeout(() => { if (node.parentNode) node.parentNode.removeChild(node); }, ANIM_DUR);
+            });
+          });
         } else {
-          // Update dim state for persisting elements
+          // Persistent element — only update dim flag, NO transition applied
           const { node, def } = activeNodes[id];
           if (frame.dimNodes && !def.isCard) {
             node.classList.add('dimmed');
@@ -725,10 +738,10 @@
         }
       });
 
-      // Enter new
+      // ── ENTER new elements ────────────────────────────────────────────────
       frame.items.forEach(id => {
-        if (activeNodes[id]) return;
-        
+        if (activeNodes[id]) return; // already present — do nothing
+
         const def = Elements[id];
         let node;
 
@@ -744,17 +757,21 @@
           htmlLayer.appendChild(node);
         }
 
-        node.classList.add('entering');
-        if (frame.dimNodes && !def.isCard) {
-          node.classList.add('dimmed');
-        }
+        // Apply start state (no transition yet so it snaps instantly to start position)
+        node.classList.add(enterClass(def));
+        if (frame.dimNodes && !def.isCard) node.classList.add('dimmed');
 
         activeNodes[id] = { id, node, def };
 
-        // Double rAF to trigger animation transition
+        // Paint start state, then enable transition and remove entering class
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            if (activeNodes[id]) activeNodes[id].node.classList.remove('entering');
+            if (!activeNodes[id]) return;
+            const n = activeNodes[id].node;
+            n.style.transition = transitionStyle(def);
+            n.classList.remove(enterClass(def));
+            // After transition completes, clear inline transition so it never bleeds
+            setTimeout(() => { n.style.transition = ''; }, ANIM_DUR);
           });
         });
       });
