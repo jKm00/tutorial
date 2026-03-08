@@ -103,12 +103,22 @@
 
     .entering {
       opacity: 0 !important;
-      transform: scale(0.95) translateY(20px) !important;
+      transform: scale(0.92) translateY(16px) !important;
     }
 
     .exiting {
       opacity: 0 !important;
-      transform: scale(0.95) !important;
+      transform: scale(0.92) translateY(-16px) !important;
+    }
+
+    /* Cards must scale from their own center, not from top-left */
+    .card-overlay.entering {
+      transform: translate(-50%, -50%) scale(0.92) !important;
+      opacity: 0 !important;
+    }
+    .card-overlay.exiting {
+      transform: translate(-50%, -50%) scale(0.92) !important;
+      opacity: 0 !important;
     }
 
     .dimmed {
@@ -310,33 +320,28 @@
     .card-overlay {
       position: absolute;
       top: 50%; left: 50%;
-      width: 800px;
+      width: 700px;
       transform: translate(-50%, -50%);
       background: rgba(12, 12, 16, 0.7);
       backdrop-filter: blur(32px);
       -webkit-backdrop-filter: blur(32px);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 24px;
-      padding: 64px;
+      padding: 56px 64px;
       box-shadow: 
         0 40px 80px -20px rgba(0, 0, 0, 0.8),
         inset 0 1px 0 rgba(255, 255, 255, 0.05);
       z-index: 100;
-    }
-
-    .card-overlay.entering {
-      transform: translate(-50%, -45%) scale(0.98);
-      opacity: 0;
-    }
-    .card-overlay.exiting {
-      transform: translate(-50%, -55%) scale(0.98);
-      opacity: 0;
+      /* Transition must include transform so the scale animates smoothly */
+      transition:
+        opacity 0.55s cubic-bezier(0.2, 0.8, 0.2, 1),
+        transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .card-title {
-      font-size: 3rem;
-      margin-bottom: 48px;
-      letter-spacing: -1px;
+      font-size: 2.6rem;
+      margin-bottom: 36px;
+      letter-spacing: -0.5px;
       text-align: center;
     }
 
@@ -357,16 +362,16 @@
     .bullet-list {
       display: flex;
       flex-direction: column;
-      gap: 32px;
+      gap: 20px;
     }
 
     .bullet-item {
       display: flex;
-      align-items: flex-start;
-      gap: 24px;
+      align-items: center;
+      gap: 20px;
       opacity: 0;
-      transform: translateX(-20px);
-      animation: slideIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      transform: translateX(-16px);
+      animation: slideIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
     }
 
     @keyframes slideIn {
@@ -374,13 +379,13 @@
     }
 
     .bullet-icon {
-      width: 48px;
-      height: 48px;
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
+      font-size: 1.3rem;
       flex-shrink: 0;
     }
 
@@ -394,16 +399,11 @@
       border: 1px solid rgba(20, 184, 166, 0.2);
     }
 
-    .bullet-text h3 {
-      font-size: 1.25rem;
+    .bullet-label {
+      font-size: 1.1rem;
+      font-weight: 500;
       color: var(--text-main);
-      margin-bottom: 8px;
-    }
-
-    .bullet-text p {
-      font-size: 1.05rem;
-      color: var(--text-muted);
-      line-height: 1.6;
+      line-height: 1.4;
     }
 
     /* Dot Indicators */
@@ -564,19 +564,19 @@
             <div class="bullet-list">
               <div class="bullet-item" style="animation-delay: 0.1s">
                 <div class="bullet-icon">🔗</div>
-                <div class="bullet-text"><h3>Tight Coupling</h3><p>Order Service must know the location and API of every downstream service.</p></div>
+                <div class="bullet-label">Tight coupling between services.</div>
               </div>
               <div class="bullet-item" style="animation-delay: 0.2s">
                 <div class="bullet-icon">🔧</div>
-                <div class="bullet-text"><h3>Changes Required Every Time</h3><p>Adding a new service means modifying Order Service code and redeploying.</p></div>
+                <div class="bullet-label">Adding a service = modifying the producer.</div>
               </div>
               <div class="bullet-item" style="animation-delay: 0.3s">
                 <div class="bullet-icon">💥</div>
-                <div class="bullet-text"><h3>Fragile by Design</h3><p>A single failed HTTP call can break the entire checkout. Retry logic must be built manually.</p></div>
+                <div class="bullet-label">Single point of failure per call.</div>
               </div>
               <div class="bullet-item" style="animation-delay: 0.4s">
-                <div class="bullet-icon">⏳</div>
-                <div class="bullet-text"><h3>Cascading Failures</h3><p>One slow downstream service stalls the whole order flow for the user.</p></div>
+                <div class="bullet-icon">📉</div>
+                <div class="bullet-label">Hard to scale independently.</div>
               </div>
             </div>
           </div>`
@@ -589,19 +589,23 @@
             <div class="bullet-list">
               <div class="bullet-item" style="animation-delay: 0.1s">
                 <div class="bullet-icon">🚀</div>
-                <div class="bullet-text"><h3>Total Decoupling</h3><p>Order Service simply publishes an event. It knows nothing about who consumes it.</p></div>
+                <div class="bullet-label">Producer doesn't know about consumers.</div>
               </div>
               <div class="bullet-item" style="animation-delay: 0.2s">
                 <div class="bullet-icon">➕</div>
-                <div class="bullet-text"><h3>Infinitely Extensible</h3><p>Add new consumer services listening to events without ever touching the Order Service.</p></div>
+                <div class="bullet-label">New service? Just subscribe.</div>
               </div>
               <div class="bullet-item" style="animation-delay: 0.3s">
-                <div class="bullet-icon">🛡️</div>
-                <div class="bullet-text"><h3>Built-in Resilience</h3><p>Messages persist in the broker. Consumers process them and retry on their own schedule.</p></div>
+                <div class="bullet-icon">🔓</div>
+                <div class="bullet-label">Loose coupling.</div>
               </div>
               <div class="bullet-item" style="animation-delay: 0.4s">
+                <div class="bullet-icon">🛡️</div>
+                <div class="bullet-label">Built-in retry &amp; fault tolerance.</div>
+              </div>
+              <div class="bullet-item" style="animation-delay: 0.5s">
                 <div class="bullet-icon">📈</div>
-                <div class="bullet-text"><h3>Independent Scaling</h3><p>Each consumer scales horizontally based entirely on its own individual load.</p></div>
+                <div class="bullet-label">Independent scaling.</div>
               </div>
             </div>
           </div>`
